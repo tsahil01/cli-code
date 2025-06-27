@@ -122,3 +122,36 @@ export interface CommandResponse {
     error?: string;
     message: string;
 }
+
+
+export interface FileChange {
+    startLine: number;  
+    endLine: number;    
+    originalContent: string;
+    proposedContent: string;
+    description?: string;
+}
+
+export interface ChangeProposal {
+    id: string;
+    title: string;
+    description: string;
+    filePath: string;
+    originalContent?: string;
+    proposedContent?: string;
+    startLine?: number;  
+    endLine?: number;    
+    changes?: FileChange[];
+    timestamp: number;
+}
+
+export interface ChangeProposalRequest {
+    title: string;
+    description: string;
+    filePath: string;
+    originalContent?: string;
+    proposedContent?: string;
+    startLine?: number;  
+    endLine?: number;    
+    changes?: FileChange[];
+}
