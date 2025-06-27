@@ -75,7 +75,7 @@ function UI() {
     }
 
     return (
-        <Box flexDirection="column">
+        <Box flexDirection="column" marginX={2}>
             <Agent />
         </Box>
     )
