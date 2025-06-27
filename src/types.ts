@@ -39,3 +39,10 @@ export interface UserData {
     tokenId: string;
     subscriptions: Subscription[];
 }
+
+export interface ConfigFormat {
+    accessToken?: string;
+    accessTokenExpiry?: number;
+    refreshToken?: string;
+    user?: UserData;
+}

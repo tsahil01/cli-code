@@ -4,7 +4,7 @@ async function getModels() {
     try {
         const response = await fetch(`${WORKER_URL}/models`);
         const data = await response.json();
-        return data;
+        return data.models;
     } catch (error) {
         console.error("Error fetching models:", error);
         return [];
