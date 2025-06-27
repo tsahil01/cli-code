@@ -24,3 +24,18 @@ export interface Command {
     args: string[];
     options: string[];
 }
+
+export interface Subscription {
+    id: string;
+    planId: string;
+    status: string;
+    currentPeriodStart: string;
+    nextPeriodStart: string;
+}
+
+export interface UserData {
+    email: string;
+    type: string;
+    tokenId: string;
+    subscriptions: Subscription[];
+}
