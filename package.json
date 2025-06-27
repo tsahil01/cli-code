@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && tsc-alias",
+    "build": "tsc -b",
     "start": "node dist/index.js",
-    "dev": "tsc -b && tsc-alias && node dist/index.js",
+    "dev": "tsc -b && node dist/index.js",
     "link": "npm link"
   },
   "repository": {
@@ -24,6 +24,7 @@
   "homepage": "https://github.com/tsahil01/cli-code#readme",
   "dependencies": {
     "clipboardy": "^4.0.0",
+    "dotenv": "^16.6.0",
     "ink": "^6.0.1",
     "ink-big-text": "^2.0.0",
     "react": "^19.1.0"

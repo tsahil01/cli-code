@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Header } from "./components/header.js";
-import { ChatInput } from "./components/chat-input.js";
+import { Header, ChatInput } from "./components/index.js";
 import { Command, SelectedFile } from "../types.js";
 
 export function Agent() {
@@ -31,6 +30,7 @@ export function Agent() {
         args: [],
         options: [],
     }];
+
     const handleSend = (message: string, files: SelectedFile[]) => {
         console.log("message", message);
         if(message.startsWith("/")){
@@ -46,7 +46,7 @@ export function Agent() {
     return (
         <>
             <Header cmds={cmds} />
-            <ChatInput onSend={handleSend} />
+            <ChatInput onSend={handleSend} commands={cmds} />
         </>
     )
 }
