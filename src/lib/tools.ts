@@ -3,7 +3,7 @@ import { exec, spawn } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { getClient } from "./editor";
+import { getClient } from "./editor.js";
 
 const runningProcesses: { [key: string]: any } = {};
 
