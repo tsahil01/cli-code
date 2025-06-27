@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useInput } from "ink";
 import clipboardy from "clipboardy";
 import { SelectedFile, Command } from "../../types.js";
+import path from "path";
 
 interface UseChatInputProps {
 	onSend: (message: string, files: SelectedFile[]) => void;
@@ -117,7 +118,7 @@ export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
 		}
 
 		setSelectedFiles(prev => [...prev, { path: filePath, content }]);
-		setInput(prev => prev + ` @${filePath} `);
+		setInput(prev => prev + ` @${path.basename(filePath)} `);
 		setShowFileSelector(false);
 	};
 
