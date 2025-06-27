@@ -4,4 +4,6 @@ export { FileSelector } from './file-selector.js';
 export { CommandSuggestions } from './command-suggestions.js';
 export { AttachedFiles } from './attached-files.js';
 export { InputDisplay } from './input-display.js';
-export { useChatInput } from './use-chat-input.js'; 
+export { useChatInput } from './use-chat-input.js';
+export { Initialization } from './initlization.js';
+export { Login } from './login.js'; 

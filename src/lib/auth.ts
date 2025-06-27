@@ -1,4 +1,4 @@
-import { readConfigFile, writeConfigFile } from "./configMngt.js";
+import { appendConfigFile, readConfigFile, writeConfigFile } from "./configMngt.js";
 import { BACKEND_URL } from "./const.js";
 
 export async function login(refreshToken: string) {
@@ -12,7 +12,7 @@ export async function login(refreshToken: string) {
         })
         const data = await response.json();
         if (data.accessToken) {
-            await writeConfigFile({ accessToken: data.accessToken });
+            await appendConfigFile({ accessToken: data.accessToken });
             return data.accessToken;
         }
         return null;
@@ -24,7 +24,7 @@ export async function login(refreshToken: string) {
 
 export async function logout() {
     try {
-        await writeConfigFile({ accessToken: null });
+        await writeConfigFile({});
         return true;
     } catch (error) {
         console.error("Error logging out:", error);
