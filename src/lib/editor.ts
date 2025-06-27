@@ -148,4 +148,24 @@ class EditorContextClient {
     }
 }
 
+let client: EditorContextClient | null = null;
+
+export const getClient = (): EditorContextClient => {
+    if (!client) {
+        throw new Error('EditorContextClient not initialized. Call init() first.');
+    }
+    return client;
+}
+
+
+export const init = async (): Promise<EditorContextClient> => {
+    if (client) {
+        return client;
+    }
+    client = new EditorContextClient('localhost', 3210);
+    await client.connectWebSocket();
+    return client;
+}
+
+
 export default EditorContextClient;

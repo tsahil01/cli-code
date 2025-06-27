@@ -4,6 +4,7 @@ import { Agent } from "./ui/agent.js";
 import { readConfigFile, appendConfigFile } from "./lib/configMngt.js";
 import { login } from "./lib/auth.js";
 import { Initialization } from "./ui/components/initlization.js";
+import { init } from "./lib/editor.js";
 
 function UI() {
     const [initializing, setInitializing] = useState(true);
@@ -60,6 +61,7 @@ function UI() {
 
     useEffect(() => {
         initialize();
+        init();
     }, []);
 
     if (initializing || !loggedIn) {
