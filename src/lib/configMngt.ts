@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { ConfigFormat } from "../types.js";
 
 type Config = Record<string, any>;
 
@@ -24,20 +25,20 @@ async function appendConfigFile(newData: Config) {
     await writeConfigFile(mergedConfig);
 }
 
-async function readConfigFile(key?: string): Promise<any> {
+async function readConfigFile(): Promise<ConfigFormat> {
     const configPath = path.join(os.homedir(), ".config", "cli-code", "config.json");
     
     try {
         if (!fs.existsSync(configPath)) {
             await createConfigFile();
-            return key ? undefined : {};
+            return {};
         }
         
         const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-        return key ? config[key] : config;
+        return config;
     } catch (error) {
         console.error("Error reading config file:", error);
-        return key ? undefined : {};
+        return {};
     }
 }
 
