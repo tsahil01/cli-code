@@ -1,17 +1,9 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { MarkdownRenderer } from './markdown-renderer.js';
+import { Message } from '../../types.js';
 
-interface Message {
-    content: string;
-    isUser: boolean;
-}
-
-interface MessageDisplayProps {
-    messages: Message[];
-}
-
-export const MessageDisplay = ({ messages }: MessageDisplayProps) => {
+export const MessageDisplay = ({ messages }: { messages: Message[] }) => {
     if (messages.length === 0) {
         return null;
     }
@@ -19,8 +11,8 @@ export const MessageDisplay = ({ messages }: MessageDisplayProps) => {
     return (
         <Box flexDirection="column" marginY={1}>
             {messages.map((message, index) => {
-                const isFirstInGroup = index === 0 || messages[index - 1].isUser !== message.isUser;
-                const isLastInGroup = index === messages.length - 1 || messages[index + 1].isUser !== message.isUser;
+                const isFirstInGroup = index === 0 || messages[index - 1].type !== message.type;
+                const isLastInGroup = index === messages.length - 1 || messages[index + 1].type !== message.type;
                 
                 return (
                     <Box 
@@ -29,8 +21,7 @@ export const MessageDisplay = ({ messages }: MessageDisplayProps) => {
                         marginY={isFirstInGroup ? 1 : 0}
                         marginBottom={isLastInGroup ? 1 : 0}
                     >
-                        {/* Message indicator */}
-                        <Text color={message.isUser ? "cyan" : "magenta"}>
+                        <Text color={message.type === 'user' ? "cyan" : "magenta"}>
                             ┃ 
                         </Text>
                         
@@ -40,8 +31,8 @@ export const MessageDisplay = ({ messages }: MessageDisplayProps) => {
                         >
                             <MarkdownRenderer
                                 content={message.content}
-                                baseColor={message.isUser ? "white" : "gray"}
-                                dimmed={!message.isUser}
+                                baseColor={message.type === 'user' ? "white" : "gray"}
+                                dimmed={message.type !== 'user'}
                             />
                         </Box>
                     </Box>
