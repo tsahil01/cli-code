@@ -1,7 +1,16 @@
 export interface Message {
-    content: string;
-    type: 'user' | 'system';
+    content?: string;
+    role: 'user' | 'system' | 'assistant';
     ignoreInLLM?: boolean;
+    thinking?: boolean;
+    metadata?: MessageMetadata;
+}
+
+export interface MessageMetadata {
+    thinkingContent?: string;
+    toolCalls?: string[];
+    finishReason?: string;
+    usageMetadata?: any;
 }
 
 export type ToolInput = {
