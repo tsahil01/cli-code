@@ -16,7 +16,6 @@ export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
 	const [showSuggestions, setShowSuggestions] = useState(false);
 	const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
 
-	// Filter commands based on current input
 	const getSuggestions = () => {
 		if (!input.startsWith('/')) return [];
 		const query = input.slice(1).toLowerCase();
@@ -32,7 +31,6 @@ export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
 			return;
 		}
 
-		// Handle suggestions navigation
 		if (showSuggestions && suggestions.length > 0) {
 			if (key.upArrow) {
 				setSelectedSuggestionIndex(prev => 
@@ -47,7 +45,6 @@ export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
 				return;
 			}
 			if (key.tab) {
-				// Autocomplete with selected suggestion
 				const selectedCmd = suggestions[selectedSuggestionIndex];
 				if (selectedCmd) {
 					setInput(`/${selectedCmd.name}`);
@@ -73,7 +70,6 @@ export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
 			const newInput = input.slice(0, -1);
 			setInput(newInput);
 			
-			// Update suggestions visibility
 			if (newInput.startsWith('/') && newInput.length > 1) {
 				setShowSuggestions(true);
 				setSelectedSuggestionIndex(0);
@@ -98,7 +94,6 @@ export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
 			const newInput = input + char;
 			setInput(newInput);
 			
-			// Show suggestions when typing '/' or continuing after '/'
 			if (char === '/' && input === '') {
 				setShowSuggestions(true);
 				setSelectedSuggestionIndex(0);
