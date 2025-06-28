@@ -1,0 +1,158 @@
+import React, { useState } from 'react';
+import { Box, Text, useInput } from 'ink';
+import { Command, CommandOption } from '../../types';
+
+interface CommandModalProps {
+    command: Command;
+    onClose: () => void;
+    onExecute?: (command: Command, selectedOptions: Record<string, any>) => void;
+}
+
+interface OptionState {
+    [key: string]: any;
+}
+
+export const CommandModal = ({ command, onClose, onExecute }: CommandModalProps) => {
+    const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
+    const [optionValues, setOptionValues] = useState<OptionState>({});
+    const [isConfirming, setIsConfirming] = useState(false);
+
+    const selectableOptions = command.options.filter(opt => opt.type === 'select' && opt.choices);
+    const currentOption = selectableOptions[selectedOptionIndex];
+
+    useInput((input, key) => {
+        if (key.escape) {
+            if (isConfirming) {
+                setIsConfirming(false);
+            } else {
+                onClose();
+            }
+            return;
+        }
+
+        if (currentOption?.type === 'select' && currentOption.choices) {
+            if (key.upArrow) {
+                const currentValue = optionValues[currentOption.name] || currentOption.choices[0];
+                const currentIndex = currentOption.choices.indexOf(currentValue);
+                const newValue = currentOption.choices[Math.max(0, currentIndex - 1)];
+                setOptionValues({ ...optionValues, [currentOption.name]: newValue });
+            }
+            if (key.downArrow) {
+                const currentValue = optionValues[currentOption.name] || currentOption.choices[0];
+                const currentIndex = currentOption.choices.indexOf(currentValue);
+                const newValue = currentOption.choices[Math.min(currentOption.choices.length - 1, currentIndex + 1)];
+                setOptionValues({ ...optionValues, [currentOption.name]: newValue });
+            }
+        }
+
+        if (key.tab) {
+            setSelectedOptionIndex((prev) =>
+                (prev + 1) % selectableOptions.length
+            );
+        }
+
+        if (key.return) {
+            if (isConfirming) {
+                onExecute?.(command, optionValues);
+                onClose();
+            } else if (command.name === 'new') {
+                setIsConfirming(true);
+            } else if (onExecute) {
+                onExecute(command, optionValues);
+                onClose();
+            }
+        }
+    });
+
+    const renderOption = (option: CommandOption) => {
+        if (option.type === 'select' && option.choices) {
+            const currentValue = optionValues[option.name] || option.choices[0];
+            const isSelected = selectableOptions[selectedOptionIndex].name === option.name;
+
+            return (
+                <Box key={option.name} flexDirection="column">
+                    <Text color={isSelected ? "yellow" : "white"}>
+                        {option.name}
+                    </Text>
+                    <Box marginLeft={1} flexDirection="column">
+                        {option.choices.map((choice) => (
+                            <Text key={choice} color={choice === currentValue ? "green" : "gray"}>
+                                {choice === currentValue ? "● " : "○ "}{choice}
+                            </Text>
+                        ))}
+                    </Box>
+                </Box>
+            );
+        }
+        return null;
+    };
+
+    const renderCommandContent = () => {
+        switch (command.name) {
+            case 'help':
+                return (
+                    <Box flexDirection="column">
+                        <Text>/help - Show help</Text>
+                        <Text>/sessions - Manage sessions</Text>
+                        <Text>/new - New session</Text>
+                        <Text>/model - Switch model</Text>
+                        <Text>/exit - Exit app</Text>
+                    </Box>
+                );
+
+            case 'sessions':
+                return (
+                    <Box flexDirection="column">
+                        {command.options.map(renderOption)}
+                        <Text dimColor>↑↓ select • tab switch • enter confirm</Text>
+                    </Box>
+                );
+
+            case 'model':
+                return (
+                    <Box flexDirection="column">
+                        {command.options.map(renderOption)}
+                        <Text dimColor>↑↓ select • enter confirm</Text>
+                    </Box>
+                );
+
+            case 'new':
+                return (
+                    <Box flexDirection="column">
+                        {isConfirming ? (
+                            <>
+                                <Text color="red">Clear chat history?</Text>
+                                <Text dimColor>enter confirm • esc cancel</Text>
+                            </>
+                        ) : (
+                            <>
+                                <Text>Start new session</Text>
+                                <Text dimColor>enter continue • esc cancel</Text>
+                            </>
+                        )}
+                    </Box>
+                );
+
+            default:
+                return (
+                    <Box>
+                        <Text>Unknown: /{command.name}</Text>
+                    </Box>
+                );
+        }
+    };
+
+    return (
+        <Box flexDirection="column" alignSelf='flex-start'>
+            <Box
+                flexDirection="column"
+                borderStyle="round"
+                borderColor="gray"
+                margin={1}
+            >
+                <Text bold color="yellow">/{command.name}</Text>
+                {renderCommandContent()}
+            </Box>
+        </Box>
+    );
+}; 

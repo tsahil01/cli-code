@@ -1,82 +1,90 @@
 import React, { useState } from 'react';
 import { Header, ChatInput } from "./components/index.js";
-import { Command, SelectedFile } from "../types.js";
+import { Command, SelectedFile, Message } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
-
-interface Message {
-    content: string;
-    isUser: boolean;
-}
+import { CommandModal } from './components/command-modal.js';
+import { useInput } from 'ink';
+import { systemCmds } from '../lib/systemCmds.js';
 
 export function Agent() {
     const [messages, setMessages] = useState<Message[]>([]);
-    const cmds: Command[] = [{
-        name: "help",
-        description: "show help",
-        args: [],
-        options: [],
-    },{
-        name: "sessions",
-        description: "list sessions",
-        args: [],
-        options: [],
-    },{
-        name: "new",
-        description: "start a new session",
-        args: [],
-        options: [],
-    },{
-        name: "model",
-        description: "switch model",
-        args: [],
-        options: [],
-    },{
-        name: "exit",
-        description: "exit the app",
-        args: [],
-        options: [],
-    }];
+    const [activeCommand, setActiveCommand] = useState<Command | null>(null);
+    
+    useInput((input, key) => {
+        if (key.escape && activeCommand) {
+            setActiveCommand(null);
+        }
+    });
+
+    const handleCommandExecute = (command: Command, options: Record<string, any>) => {
+        switch (command.name) {
+            case 'model':
+                setMessages(prev => [...prev, {
+                    content: `Switched to model: ${options.model}`,
+                    type: 'system',
+                    ignoreInLLM: true
+                }]);
+                break;
+            case 'sessions':
+                setMessages(prev => [...prev, {
+                    content: `Loading session: ${options.session}`,
+                    type: 'system',
+                    ignoreInLLM: true
+                }]);
+                break;
+            case 'new':
+                setMessages([]);
+                setMessages([{
+                    content: "Started a new chat session",
+                    type: 'system',
+                    ignoreInLLM: true
+                }]);
+                break;
+        }
+    };
 
     const handleSend = (message: string, files: SelectedFile[]) => {
-        // Add user message
-        setMessages(prev => [...prev, { content: message, isUser: true }]);
-
-        // Handle commands
-        if(message.startsWith("/")){
-            const command = cmds.find(cmd => cmd.name === message.slice(1));
-            if(command){
-                console.log("command", command);
-                // Add system response for command
-                setMessages(prev => [...prev, { 
-                    content: `Executing command: ${command.name}`, 
-                    isUser: false 
-                }]);
+        if(message.startsWith("/")) {
+            const commandName = message.slice(1);
+            const command = systemCmds.find(cmd => cmd.name === commandName);
+            if(command) {
+                if(command.name === 'exit') {
+                    process.exit(0);
+                } else {
+                    setActiveCommand(command);
+                }
+                return;
             }
+        }
+        
+        if (files.length > 0) {
+            const contentWithFiles = message + `\n\n\nI have attached files for your reference: ${files.map(f => f.path).join(", ")}.`;
+            setMessages(prev => [...prev, { content: contentWithFiles, type: 'user' }]);
         } else {
-            // Add mock response for now
-            setTimeout(() => {
-                setMessages(prev => [...prev, { 
-                    content: "This is a mock response. The actual LLM integration will be implemented later.", 
-                    isUser: false 
-                }]);
-            }, 1000);
+            setMessages(prev => [...prev, { content: message, type: 'user' }]);
         }
 
-        if (files.length > 0) {
-            console.log("attached files:", files.map(f => f.path));
-            // Add system message for files
+        // Mock response - to be replaced with actual LLM integration
+        setTimeout(() => {
             setMessages(prev => [...prev, { 
-                content: `Attached files: ${files.map(f => f.path).join(", ")}`, 
-                isUser: false 
+                content: "This is a mock response. The actual LLM integration will be implemented later.", 
+                type: 'system' 
             }]);
-        }
+        }, 1000);
     }
 
     return (
         <>
-            <Header cmds={cmds} />
+            <Header cmds={systemCmds} />
             <MessageDisplay messages={messages} />
-            <ChatInput onSend={handleSend} commands={cmds} />
+            <ChatInput onSend={handleSend} commands={systemCmds} />
+            {activeCommand && (
+                <CommandModal 
+                    command={activeCommand} 
+                    onClose={() => setActiveCommand(null)}
+                    onExecute={handleCommandExecute}
+                />
+            )}
         </>
-    )
+    );
 }

@@ -1,3 +1,9 @@
+export interface Message {
+    content: string;
+    type: 'user' | 'system';
+    ignoreInLLM?: boolean;
+}
+
 export type ToolInput = {
     cmd?: string,
     filePath?: string,
@@ -18,11 +24,34 @@ export interface SelectedFile {
 	content: string;
 }
 
+export interface CommandOption {
+    name: string;
+    description: string;
+    type: 'string' | 'number' | 'boolean' | 'select';
+    required?: boolean;
+    choices?: string[];  // For type: 'select'
+    default?: any;
+}
+
+export interface CommandArgument {
+    name: string;
+    description: string;
+    type: 'string' | 'number' | 'boolean' | 'file';
+    required: boolean;
+}
+
 export interface Command {
     name: string;
     description: string;
-    args: string[];
-    options: string[];
+    args: CommandArgument[];
+    options: CommandOption[];
+    category?: 'general' | 'session' | 'model' | 'system';
+}
+
+export interface SystemCommand {
+    name: string;
+    description: string;
+    
 }
 
 export interface Subscription {
@@ -154,4 +183,13 @@ export interface ChangeProposalRequest {
     startLine?: number;  
     endLine?: number;    
     changes?: FileChange[];
+}
+
+export interface ChatRequest {
+    messages: Message[];
+    provider: "openai" | "anthropic" | "gemini";
+    base_url?: string;
+    model: string;
+    temperature?: number;
+    max_tokens?: number;
 }
