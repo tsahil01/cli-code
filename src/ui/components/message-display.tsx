@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
+import { MarkdownRenderer } from './markdown-renderer.js';
 
 interface Message {
     content: string;
@@ -37,14 +38,11 @@ export const MessageDisplay = ({ messages }: MessageDisplayProps) => {
                             paddingX={1}
                             width="65%"
                         >
- 
-                            <Text
-                                color={message.isUser ? "white" : "gray"}
-                                dimColor={!message.isUser}
-                                bold={isFirstInGroup}
-                            >
-                                {message.content}
-                            </Text>
+                            <MarkdownRenderer
+                                content={message.content}
+                                baseColor={message.isUser ? "white" : "gray"}
+                                dimmed={!message.isUser}
+                            />
                         </Box>
                     </Box>
                 );
