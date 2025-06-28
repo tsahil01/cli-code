@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { Header, ChatInput } from "./components/index.js";
-import { Command, SelectedFile, Message } from "../types.js";
+import { Command, SelectedFile, Message, ChatRequest } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
 import { useInput } from 'ink';
 import { systemCmds } from '../lib/systemCmds.js';
+import { chat } from '../lib/chat.js';
 
 export function Agent() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [activeCommand, setActiveCommand] = useState<Command | null>(null);
+    const [thinking, setThinking] = useState<string>('');
+    const [content, setContent] = useState<string>('');
+    const [isProcessing, setIsProcessing] = useState<boolean>(false);
     
     useInput((input, key) => {
         if (key.escape && activeCommand) {
@@ -21,14 +25,14 @@ export function Agent() {
             case 'model':
                 setMessages(prev => [...prev, {
                     content: `Switched to model: ${options.model}`,
-                    type: 'system',
+                    role: 'system',
                     ignoreInLLM: true
                 }]);
                 break;
             case 'sessions':
                 setMessages(prev => [...prev, {
                     content: `Loading session: ${options.session}`,
-                    type: 'system',
+                    role: 'system',
                     ignoreInLLM: true
                 }]);
                 break;
@@ -36,14 +40,14 @@ export function Agent() {
                 setMessages([]);
                 setMessages([{
                     content: "Started a new chat session",
-                    type: 'system',
+                    role: 'system',
                     ignoreInLLM: true
                 }]);
                 break;
         }
     };
 
-    const handleSend = (message: string, files: SelectedFile[]) => {
+    const handleSend = async (message: string, files: SelectedFile[]) => {
         if(message.startsWith("/")) {
             const commandName = message.slice(1);
             const command = systemCmds.find(cmd => cmd.name === commandName);
@@ -57,26 +61,70 @@ export function Agent() {
             }
         }
         
-        if (files.length > 0) {
-            const contentWithFiles = message + `\n\n\nI have attached files for your reference: ${files.map(f => f.path).join(", ")}.`;
-            setMessages(prev => [...prev, { content: contentWithFiles, type: 'user' }]);
-        } else {
-            setMessages(prev => [...prev, { content: message, type: 'user' }]);
-        }
+        const userMessage = files.length > 0 
+            ? message + `\n\n\nI have attached files for your reference: ${files.map(f => f.path).join(", ")}.`
+            : message;
+            
+        setMessages(prev => [...prev, { content: userMessage, role: 'user' }]);
+        setIsProcessing(true);
+        setThinking('');
+        setContent('');
 
-        // Mock response - to be replaced with actual LLM integration
-        setTimeout(() => {
+        try {
+            const chatRequest: ChatRequest = {
+                messages: [...messages, { content: userMessage, role: 'user' }],
+                provider: 'gemini',
+                model: 'gemini-2.5-flash',
+            };
+
+            await chat(
+                chatRequest,
+                0,
+                (thinking) => setThinking(thinking),
+                (content) => setContent(content),
+                (toolCall) => {
+
+                },
+                (finalContent, metadata) => {
+                    console.log("finalContent:", finalContent);
+                    console.log("metadata:", metadata);
+                    setMessages(prev => [...prev, { 
+                        content: finalContent,
+                        role: 'assistant',
+                        metadata: {
+                            thinking: metadata.thinkingContent,
+                            toolCalls: metadata.toolCalls?.map((t: { functionCall: { name: string } }) => t.functionCall.name) || []
+                        }
+                    }]);
+                },
+                () => {
+                    setIsProcessing(false);
+                    setThinking('');
+                    setContent('');
+                }
+            );
+        } catch (error) {
+            console.error('Chat error:', error);
             setMessages(prev => [...prev, { 
-                content: "This is a mock response. The actual LLM integration will be implemented later.", 
-                type: 'system' 
+                content: `Error: ${error instanceof Error ? error.message : 'An unknown error occurred'}`, 
+                role: 'system',
+                ignoreInLLM: true
             }]);
-        }, 1000);
+            setIsProcessing(false);
+            setThinking('');
+            setContent('');
+        }
     }
 
     return (
         <>
             <Header cmds={systemCmds} />
-            <MessageDisplay messages={messages} />
+            <MessageDisplay 
+                messages={messages} 
+                thinking={thinking}
+                currentContent={content}
+                isProcessing={isProcessing}
+            />
             <ChatInput onSend={handleSend} commands={systemCmds} />
             {activeCommand && (
                 <CommandModal 
