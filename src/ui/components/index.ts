@@ -1,5 +1,6 @@
 export { Header } from './header.js';
 export { ChatInput } from './chat-input.js';
+export { MessageDisplay } from './message-display.js';
 export { FileSelector } from './file-selector.js';
 export { CommandSuggestions } from './command-suggestions.js';
 export { AttachedFiles } from './attached-files.js';

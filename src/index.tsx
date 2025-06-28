@@ -77,7 +77,7 @@ function UI() {
     }
 
     return (
-        <Box flexDirection="column" marginX={2}>
+        <Box flexDirection="column" marginX={2} width={"80%"} alignSelf="center">
             <Agent />
         </Box>
     )
