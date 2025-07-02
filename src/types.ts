@@ -102,6 +102,7 @@ export interface ConfigFormat {
     accessTokenExpiry?: number;
     refreshToken?: string;
     user?: UserData;
+    acceptAllToolCalls?: boolean;
 }
 
 
