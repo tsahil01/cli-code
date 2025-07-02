@@ -184,7 +184,10 @@ export const open_file_vscode = (filePath: string, options: any) => {
         try {
             const client = getClient();
             client.sendCommand('openFile', [filePath], options);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to open file: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -196,7 +199,10 @@ export const write_file_vscode = (filePath: string, content: string) => {
         try {
             const client = getClient();
             client.sendCommand('writeFile', [filePath, content]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -208,7 +214,10 @@ export const delete_file = (filePath: string) => {
         try {
             const client = getClient();
             client.sendCommand('deleteFile', [filePath]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -220,7 +229,10 @@ export const select_text = (startLine: number, startChar: number, endLine: numbe
         try {
             const client = getClient();
             client.sendCommand('selectText', [startLine, startChar, endLine, endChar]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to select text: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -232,7 +244,10 @@ export const show_notification = (message: string, type: 'info' | 'warning' | 'e
         try {
             const client = getClient();
             client.sendCommand('showNotification', [message, type]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to show notification: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -244,7 +259,10 @@ export const propose_change_vscode = (changeProposal: ChangeProposalRequest) => 
         try {
             const client = getClient();
             client.sendCommand('proposeChange', [changeProposal]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to propose change: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -312,13 +330,13 @@ export const get_diagnostics = () => {
     });
 }
 
-const handleCommandResponse = (response: CommandResponse): Message => {
+export const handleCommandResponse = (response: CommandResponse): Message => {
     let content = '';
     const data = response.data;
     if(data.success) {
         content = data.message;
     } else {
-        content = `${data.message}\n\nError: ${data.error}`
+        content = `${data.error}`
     }
     return {
         content: content,
