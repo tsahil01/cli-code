@@ -5,9 +5,16 @@ import { CommandSuggestions } from "./command-suggestions.js";
 import { AttachedFiles } from "./attached-files.js";
 import { InputDisplay } from "./input-display.js";
 import { useChatInput } from "./use-chat-input.js";
-import { SelectedFile, Command } from "../../types.js";
+import { SelectedFile, Command, FunctionCall } from "../../types.js";
 
-export const ChatInput = ({ onSend, commands }: { onSend: (message: string, files: SelectedFile[]) => void, commands: Command[] }) => {
+interface ChatInputProps {
+	onSend: (message: string, files: SelectedFile[]) => void;
+	commands: Command[];
+	isProcessing?: boolean;
+	currentToolCall?: FunctionCall | null;
+}
+
+export const ChatInput = ({ onSend, commands, isProcessing, currentToolCall }: ChatInputProps) => {
 	const {
 		input,
 		showFileSelector,
@@ -17,7 +24,7 @@ export const ChatInput = ({ onSend, commands }: { onSend: (message: string, file
 		suggestions,
 		handleFileSelect,
 		handleFileCancel,
-	} = useChatInput({ onSend, commands });
+	} = useChatInput({ onSend, commands, isDisabled: isProcessing });
 
 	return (
 		<Box flexDirection="column">
@@ -31,7 +38,11 @@ export const ChatInput = ({ onSend, commands }: { onSend: (message: string, file
 				visible={showSuggestions}
 			/>
 
-			<InputDisplay input={input} />
+			<InputDisplay 
+				input={input} 
+				isProcessing={isProcessing}
+				currentToolCall={currentToolCall}
+			/>
 			
 			<AttachedFiles files={selectedFiles} />
 		</Box>

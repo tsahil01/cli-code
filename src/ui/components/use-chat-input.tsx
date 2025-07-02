@@ -7,9 +7,10 @@ import path from "path";
 interface UseChatInputProps {
 	onSend: (message: string, files: SelectedFile[]) => void;
 	commands: Command[];
+	isDisabled?: boolean;
 }
 
-export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
+export const useChatInput = ({ onSend, commands, isDisabled }: UseChatInputProps) => {
 	const [input, setInput] = useState('');
 	const [showFileSelector, setShowFileSelector] = useState(false);
 	const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
@@ -27,7 +28,7 @@ export const useChatInput = ({ onSend, commands }: UseChatInputProps) => {
 	const suggestions = getSuggestions();
 
 	useInput(async (char, key) => {
-		if (showFileSelector) {
+		if (showFileSelector || isDisabled) {
 			return;
 		}
 

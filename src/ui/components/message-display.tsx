@@ -37,9 +37,10 @@ export const MessageDisplay = ({
 
     return (
         <Box flexDirection="column" marginY={1}>
-            {messages.map((message, index) => {
-                const isFirstInGroup = index === 0 || messages[index - 1].role !== message.role;
-                const isLastInGroup = index === messages.length - 1 || messages[index + 1].role !== message.role;
+            {messages.filter(msg => !msg.ignoreInDisplay).map((message, index) => {
+                const filteredMessages = messages.filter(msg => !msg.ignoreInDisplay);
+                const isFirstInGroup = index === 0 || filteredMessages[index - 1].role !== message.role;
+                const isLastInGroup = index === filteredMessages.length - 1 || filteredMessages[index + 1].role !== message.role;
                 
                 return (
                     <Box 
@@ -54,7 +55,7 @@ export const MessageDisplay = ({
                         
                         <Box 
                             paddingX={1}
-                            width="65%"
+                            
                         >
                             <MarkdownRenderer
                                 content={message.content || ''}
@@ -76,10 +77,10 @@ export const MessageDisplay = ({
                         </Box>
                     </Box>
 
-                    {thinking && !currentContent && (
+                    {thinking && (currentContent?.length === 0 || !currentContent) && (
                         <Box flexDirection="row">
                             <Text color="magenta">┃ </Text>
-                            <Box paddingX={1} width="65%">
+                            <Box paddingX={1} >
                                 <Text color="yellow">Thinking: </Text>
                                 <MarkdownRenderer
                                     content={thinking}
@@ -90,10 +91,10 @@ export const MessageDisplay = ({
                         </Box>
                     )}
                     
-                    {currentContent && (
+                    {currentContent && currentContent.length > 0 && (
                         <Box flexDirection="row">
                             <Text color="magenta">┃ </Text>
-                            <Box paddingX={1} width="65%">
+                            <Box paddingX={1} >
                                 <Text color="yellow">Drafting: </Text>
                                 <MarkdownRenderer
                                     content={currentContent}
