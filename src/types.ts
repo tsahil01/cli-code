@@ -2,13 +2,32 @@ export interface Message {
     content?: string;
     role: 'user' | 'system' | 'assistant';
     ignoreInLLM?: boolean;
+    ignoreInDisplay?: boolean;
     thinking?: boolean;
     metadata?: MessageMetadata;
 }
 
+export interface AnthropicFunctionCall {
+    type: 'tool_use';
+    id: string;
+    name: string;
+    input?: Record<string, any>;
+}
+
+export interface GeminiFunctionCall {
+    type: 'tool_use';
+    id: string;
+    functionCall: {
+        name: string;
+        args?: Record<string, any>;
+    };
+}
+
+export type FunctionCall = AnthropicFunctionCall | GeminiFunctionCall;
+
 export interface MessageMetadata {
     thinkingContent?: string;
-    toolCalls?: string[];
+    toolCalls?: FunctionCall[];
     finishReason?: string;
     usageMetadata?: any;
 }
@@ -201,4 +220,9 @@ export interface ChatRequest {
     model: string;
     temperature?: number;
     max_tokens?: number;
+}
+
+export interface ModelData {
+    provider: "anthropic" | "openai" | "gemini",
+    model: string
 }
