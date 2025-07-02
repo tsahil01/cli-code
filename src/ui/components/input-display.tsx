@@ -9,11 +9,23 @@ interface InputDisplayProps {
 	currentToolCall?: FunctionCall | null;
 }
 
+const LoadingIndicator = () => {
+	const [frame, setFrame] = React.useState(0);
+	const frames = ['◜', '◠', '◝', '◞', '◡', '◟'];
+
+	React.useEffect(() => {
+		const timer = setInterval(() => {
+			setFrame(f => (f + 1) % frames.length);
+		}, 100);
+		return () => clearInterval(timer);
+	}, []);
+
+	return <Text color="cyan">{frames[frame]}</Text>;
+};
+
 export const InputDisplay = ({ input, isProcessing, currentToolCall }: InputDisplayProps) => {
 	const [activeFile, setActiveFile] = useState<ActiveFileInfo | null>(null);
 	const [textSelection, setTextSelection] = useState<TextSelectionInfo | null>(null);
-	const [frame, setFrame] = React.useState(0);
-	const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 	useEffect(() => {
 		const updateFileInfo = async () => {
@@ -32,58 +44,50 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall }: InputDisp
 		return () => clearInterval(interval);
 	}, []);
 
-	useEffect(() => {
-		if (isProcessing) {
-			const timer = setInterval(() => {
-				setFrame(f => (f + 1) % frames.length);
-			}, 80);
-			return () => clearInterval(timer);
-		}
-	}, [isProcessing]);
+	const getToolName = (toolCall: FunctionCall) => {
+		return 'functionCall' in toolCall 
+			? toolCall.functionCall.name 
+			: (toolCall as AnthropicFunctionCall).name;
+	};
 
 	return (
 		<Box flexDirection="column">
 			<Box 
 				borderStyle="round" 
 				borderColor="gray"
+				paddingX={1}
+				paddingY={0}
 			>
-				<Text color="blue" bold>❯ </Text>
 				{isProcessing ? (
-					<>
-						<Text color="yellow">{frames[frame]} </Text>
-						{currentToolCall ? (
-							<Text color="yellow">Running tool: {
-								'functionCall' in currentToolCall 
-									? currentToolCall.functionCall.name 
-									: (currentToolCall as AnthropicFunctionCall).name
-							}...</Text>
-						) : (
-							<Text color="yellow">Processing...</Text>
-						)}
-					</>
+					<Box>
+						<LoadingIndicator />
+						<Text color="cyan"> {currentToolCall ? `Running ${getToolName(currentToolCall)}...` : 'Processing...'}</Text>
+					</Box>
 				) : (
-					<Text color="white">
-						{input ? (() => {
-							const parts = input.split(/(@[^\s]+)/g);
-							return parts.map((part, index) => {
-								if (part.startsWith('@')) {
-									return <Text key={index} color="green">{part}</Text>;
-								}
-								return <Text key={index} color="white">{part}</Text>;
-							});
-						})() : 'Ask me anything...'}
-					</Text>
+					<Box>
+						<Text color="cyan" bold>❯ </Text>
+						<Text color="white">
+							{input ? (() => {
+								const parts = input.split(/(@[^\s]+)/g);
+								return parts.map((part, index) => {
+									if (part.startsWith('@')) {
+										return <Text key={index} color="green">{part}</Text>;
+									}
+									return <Text key={index} color="white">{part}</Text>;
+								});
+							})() : <Text color="gray">Ask me anything...</Text>}
+						</Text>
+					</Box>
 				)}
-				<Text color="gray">|</Text>
 			</Box>
 			{activeFile && (
-				<Box justifyContent="flex-end">
-					<Text dimColor>
+				<Box justifyContent="flex-end" marginTop={0}>
+					<Text color="gray">
 						{activeFile.name}
 						{textSelection && (
 							<Text>
 								<Text> • </Text>
-								<Text color="yellow">lines {textSelection.startLine + 1}-{textSelection.endLine + 1}</Text>
+								<Text color="cyan">lines {textSelection.startLine + 1}-{textSelection.endLine + 1}</Text>
 							</Text>
 						)}
 					</Text>

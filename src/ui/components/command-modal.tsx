@@ -5,17 +5,27 @@ import { Command, CommandOption } from '../../types';
 interface CommandModalProps {
     command: Command;
     onClose: () => void;
-    onExecute?: (command: Command, selectedOptions: Record<string, any>) => void;
 }
 
 interface OptionState {
     [key: string]: any;
 }
 
-export const CommandModal = ({ command, onClose, onExecute }: CommandModalProps) => {
+export const CommandModal = ({ command, onClose }: CommandModalProps) => {
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
     const [optionValues, setOptionValues] = useState<OptionState>({});
     const [isConfirming, setIsConfirming] = useState(false);
+
+    const handleCommandExecute = (command: Command, options: Record<string, any>) => {
+        switch (command.name) {
+            case 'model':
+                break;
+            case 'sessions':
+                break;
+            case 'new':
+                break;
+        }
+    };
 
     const selectableOptions = command.options.filter(opt => opt.type === 'select' && opt.choices);
     const currentOption = selectableOptions[selectedOptionIndex];
@@ -53,12 +63,12 @@ export const CommandModal = ({ command, onClose, onExecute }: CommandModalProps)
 
         if (key.return) {
             if (isConfirming) {
-                onExecute?.(command, optionValues);
+                handleCommandExecute?.(command, optionValues);
                 onClose();
             } else if (command.name === 'new') {
                 setIsConfirming(true);
-            } else if (onExecute) {
-                onExecute(command, optionValues);
+            } else if (handleCommandExecute) {
+                handleCommandExecute(command, optionValues);
                 onClose();
             }
         }
