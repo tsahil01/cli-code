@@ -1,39 +1,62 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { MarkdownRenderer } from './markdown-renderer.js';
-import { Message } from '../../types.js';
+import { Message, FunctionCall } from '../../types.js';
 
 interface MessageDisplayProps {
     messages: Message[];
     thinking?: string;
     currentContent?: string;
     isProcessing?: boolean;
+    currentToolCall?: FunctionCall | null;
 }
 
 const LoadingIndicator = () => {
     const [frame, setFrame] = React.useState(0);
-    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    const frames = ['◜', '◠', '◝', '◞', '◡', '◟']; 
 
     React.useEffect(() => {
         const timer = setInterval(() => {
             setFrame(f => (f + 1) % frames.length);
-        }, 80);
+        }, 100); 
         return () => clearInterval(timer);
     }, []);
 
-    return <Text color="yellow">{frames[frame]}</Text>;
+    return <Text color="cyan">{frames[frame]}</Text>;
+};
+
+const ToolRunningIndicator = ({ toolName }: { toolName: string }) => {
+    return (
+        <Box>
+            <Text color="gray">┌──────────────────────────────────</Text>
+            <Text color="cyan"> Running </Text>
+            <Text color="gray">───────────────────────────────────┐</Text>
+            <Box marginLeft={1}>
+                <LoadingIndicator />
+                <Text color="cyan"> {toolName}</Text>
+            </Box>
+            <Text color="gray">└──────────────────────────────────────────────────────────────────┘</Text>
+        </Box>
+    );
 };
 
 export const MessageDisplay = ({ 
     messages,
     thinking,
     currentContent,
-    isProcessing
+    isProcessing,
+    currentToolCall
 }: MessageDisplayProps) => {
 
     if (messages.length === 0 && !isProcessing) {
         return null;
     }
+
+    const getToolName = (toolCall: FunctionCall) => {
+        return 'functionCall' in toolCall 
+            ? toolCall.functionCall.name 
+            : toolCall.name;
+    };
 
     return (
         <Box flexDirection="column" marginY={1}>
@@ -55,7 +78,6 @@ export const MessageDisplay = ({
                         
                         <Box 
                             paddingX={1}
-                            
                         >
                             <MarkdownRenderer
                                 content={message.content || ''}
@@ -69,23 +91,27 @@ export const MessageDisplay = ({
             
             {isProcessing && (
                 <Box flexDirection="column">
-                    <Box flexDirection="row">
-                        <Text color="magenta">┃ </Text>
-                        <Box paddingX={1}>
-                            <LoadingIndicator />
-                            <Text color="yellow"> Processing</Text>
+                    {currentToolCall ? (
+                        <ToolRunningIndicator toolName={getToolName(currentToolCall)} />
+                    ) : (
+                        <Box flexDirection="row">
+                            <Text color="magenta">┃ </Text>
+                            <Box paddingX={1}>
+                                <LoadingIndicator />
+                                <Text color="cyan"> Processing</Text>
+                            </Box>
                         </Box>
-                    </Box>
+                    )}
 
                     {thinking && (currentContent?.length === 0 || !currentContent) && (
                         <Box flexDirection="row">
                             <Text color="magenta">┃ </Text>
-                            <Box paddingX={1} >
-                                <Text color="yellow">Thinking: </Text>
+                            <Box paddingX={1}>
+                                <Text color="cyan">Thinking: </Text>
                                 <MarkdownRenderer
                                     content={thinking}
-                                    baseColor="yellow"
-                                    dimmed={false}
+                                    baseColor="white"
+                                    dimmed={true}
                                 />
                             </Box>
                         </Box>
@@ -94,8 +120,8 @@ export const MessageDisplay = ({
                     {currentContent && currentContent.length > 0 && (
                         <Box flexDirection="row">
                             <Text color="magenta">┃ </Text>
-                            <Box paddingX={1} >
-                                <Text color="yellow">Drafting: </Text>
+                            <Box paddingX={1}>
+                                <Text color="cyan">Drafting: </Text>
                                 <MarkdownRenderer
                                     content={currentContent}
                                     baseColor="white"

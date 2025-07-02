@@ -9,43 +9,73 @@ interface ToolConfirmationDialogProps {
     onReject: () => void;
 }
 
+const KeyOption = ({ keyChar, description, color }: { keyChar: string, description: string, color: string }) => (
+    <Box marginRight={2}>
+        <Text>〈</Text>
+        <Text bold color={color}>{keyChar}</Text>
+        <Text>〉</Text>
+        <Text> {description}</Text>
+    </Box>
+);
+
 export function ToolConfirmationDialog({ toolCall, onAccept, onAcceptAll, onReject }: ToolConfirmationDialogProps) {
     useInput((input, key) => {
         if (input === 'y' || input === 'Y') {
             onAccept();
-        } else if (input === 'a' || input === 'A') {
+            return;
+        } 
+        if (input === 'a' || input === 'A') {
             onAcceptAll();
-        } else if (input === 'n' || input === 'N' || key.escape) {
+            return;
+        } 
+        if (input === 'n' || input === 'N' || key.escape) {
             onReject();
+            return;
         }
-    });
+    }, { isActive: true });
 
     const functionName = 'functionCall' in toolCall ? toolCall.functionCall.name : toolCall.name;
     const args = 'functionCall' in toolCall ? toolCall.functionCall.args : toolCall.input;
 
     return (
-        <Box flexDirection="column" borderStyle="round" padding={1}>
+        <Box 
+            flexDirection="column" 
+            borderStyle="round" 
+            borderColor="cyan"
+            paddingX={2}
+            paddingY={1}
+            marginY={1}
+        >
             <Box>
-                <Text bold>Tool Call Confirmation</Text>
+                <Text color="cyan" bold>⚡ Tool Execution Request</Text>
             </Box>
-            <Box marginTop={1}>
-                <Text>Function: </Text>
-                <Text bold color="blue">{functionName}</Text>
+            
+            <Box flexDirection="column">
+                <Box>
+                    <Text color="gray">Function: </Text>
+                    <Text bold color="cyan">{functionName}</Text>
+                </Box>
+                <Box>
+                    <Text color="gray">Arguments:</Text>
+                </Box>
+                <Box 
+                    marginLeft={2} 
+                 
+                    paddingX={1}
+                    borderStyle="single" 
+                    borderColor="gray"
+                >
+                    <Text dimColor>{JSON.stringify(args, null, 2)}</Text>
+                </Box>
             </Box>
-            <Box marginTop={1}>
-                <Text>Arguments: </Text>
-                <Text color="yellow">{JSON.stringify(args, null, 2)}</Text>
-            </Box>
-            <Box marginTop={1}>
-                <Text>Press </Text>
-                <Text bold color="green">Y</Text>
-                <Text> to accept, </Text>
-                <Text bold color="blue">A</Text>
-                <Text> to accept all future calls, </Text>
-                <Text bold color="red">N</Text>
-                <Text> or </Text>
-                <Text bold>ESC</Text>
-                <Text> to reject</Text>
+
+            <Box flexDirection="column">
+                <Text bold color="gray">Options:</Text>
+                <Box flexDirection="column">
+                    <KeyOption keyChar="Y" description="Accept this call" color="green" />
+                    <KeyOption keyChar="A" description="Accept all future calls" color="cyan" />
+                    <KeyOption keyChar="N" description="Reject" color="red" />
+                </Box>
             </Box>
         </Box>
     );
