@@ -1,16 +1,9 @@
-import { ChatRequest, MessageMetadata } from "../types.js";
+import { ChatRequest, MessageMetadata, FunctionCall } from "../types.js";
 import { WORKER_URL } from "./const.js";
 import { readConfigFile } from "./configMngt.js";
 import { handleTokenExpiry } from "./auth.js";
 
-
-interface ContentBlock {
-    text: string;
-    thought?: boolean;
-    functionCall?: string;
-}
-
-export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCallback: (thinking: string) => void, contentCallback: (content: string) => void, toolCallCallback: (toolCall: string[]) => void, finalCallback: (content: string, metadata: any) => void, doneCallback: (metadata: any) => void) {
+export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCallback: (thinking: string) => void, contentCallback: (content: string) => void, toolCallCallback: (toolCall: FunctionCall[]) => void, finalCallback: (content: string, metadata: any) => void, doneCallback: (metadata: any) => void) {
     if (retryCount > 1) {
         console.error("Max retries reached for chat. Kindly login again.");
         return {
@@ -63,7 +56,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
 
         let currentContent = '';
         let currentThinking = '';
-        let currentToolCalls: string[] = [];
+        let currentToolCalls: FunctionCall[] = [];
         let accumulatedContent = '';
 
         const extractResponse = (text: string) => {
@@ -99,7 +92,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                             break;
 
                         case 'tool_call':
-                            const toolCall = event.toolCall;
+                            const toolCall = event.toolCall as FunctionCall;
                             currentToolCalls.push(toolCall);
                             toolCallCallback(currentToolCalls);
                             break;
