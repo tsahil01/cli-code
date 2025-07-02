@@ -17,9 +17,10 @@ export function Agent() {
     const [content, setContent] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [pendingToolCall, setPendingToolCall] = useState<FunctionCall | null>(null);
+    const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'anthropic',
-        model: 'claude-3-5-sonnet-20240620'
+        provider: 'gemini',
+        model: 'gemini-2.5-flash'
     });
 
     useInput((input, key) => {
@@ -28,11 +29,45 @@ export function Agent() {
         }
     });
 
+    async function handleChatEndpoint(chatRequest: ChatRequest) {
+        return await chat(
+            chatRequest,
+            0,
+            (thinking) => setThinking(thinking),
+            (content) => setContent(content),
+            (toolCalls: FunctionCall[]) => {
+                if (toolCalls.length > 0) {
+                    setCurrentToolCall(toolCalls[0]);
+                }
+            },
+            async (finalContent, metadata) => {
+                setMessages(prev => [...prev, {
+                    content: finalContent,
+                    role: 'assistant',
+                    metadata: {
+                        thinking: metadata.thinkingContent,
+                        toolCalls: metadata.toolCalls || []
+                    }
+                }]);
+                if (metadata.toolCalls && metadata.toolCalls.length > 0) {
+                    await handleToolCall(metadata.toolCalls[0]);
+                }
+            },
+            () => {
+                setIsProcessing(false);
+                setThinking('');
+                setContent('');
+                setCurrentToolCall(null);
+            }
+        );
+    }
+
     const handleToolCall = async (toolCall: FunctionCall) => {
         const config = await readConfigFile();
-        
+
         if (config.acceptAllToolCalls) {
             try {
+                setCurrentToolCall(toolCall);
                 const result = await runTool(toolCall);
                 let newMsg: Message = {
                     content: JSON.stringify(result, null, 2),
@@ -44,11 +79,13 @@ export function Agent() {
             } catch (error) {
                 const errorMsg: Message = {
                     content: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                    role: 'system',
-                    ignoreInLLM: true
+                    role: 'user',
+                    ignoreInDisplay: true
                 }
                 setMessages(prev => [...prev, errorMsg]);
                 handleSend([...messages, errorMsg]);
+            } finally {
+                setCurrentToolCall(null);
             }
             return;
         }
@@ -60,9 +97,10 @@ export function Agent() {
         accept: async () => {
             if (!pendingToolCall) return;
             try {
+                setCurrentToolCall(pendingToolCall);
                 const result = await runTool(pendingToolCall);
                 let newMsg: Message = {
-                    content: result,
+                    content: JSON.stringify(result, null, 2),
                     role: 'user',
                     ignoreInDisplay: true
                 }
@@ -77,6 +115,7 @@ export function Agent() {
                 handleSend([...messages, errorMsg]);
             } finally {
                 setPendingToolCall(null);
+                setCurrentToolCall(null);
             }
         },
         acceptAll: async () => {
@@ -88,38 +127,11 @@ export function Agent() {
             setPendingToolCall(null);
             let newMsg: Message = {
                 content: "Tool call was rejected by the user.",
-                role: 'system',
-                ignoreInLLM: true
+                role: 'user',
+                ignoreInDisplay: true
             }
             setMessages(prev => [...prev, newMsg]);
             handleSend([...messages, newMsg]);
-        }
-    };
-
-    const handleCommandExecute = (command: Command, options: Record<string, any>) => {
-        switch (command.name) {
-            case 'model':
-                setMessages(prev => [...prev, {
-                    content: `Switched to model: ${options.model}`,
-                    role: 'system',
-                    ignoreInLLM: true
-                }]);
-                break;
-            case 'sessions':
-                setMessages(prev => [...prev, {
-                    content: `Loading session: ${options.session}`,
-                    role: 'system',
-                    ignoreInLLM: true
-                }]);
-                break;
-            case 'new':
-                setMessages([]);
-                setMessages([{
-                    content: "Started a new chat session",
-                    role: 'system',
-                    ignoreInLLM: true
-                }]);
-                break;
         }
     };
 
@@ -153,36 +165,8 @@ export function Agent() {
                 model: modelData?.model,
             };
 
-            await chat(
-                chatRequest,
-                0,
-                (thinking) => setThinking(thinking),
-                (content) => setContent(content),
-                (toolCalls: FunctionCall[]) => {
-                },
-                
-                async (finalContent, metadata) => {
-                    console.log('finalContent', finalContent);
-                    console.log('metadata', metadata);
-                    setMessages(prev => [...prev, {
-                        content: finalContent || (metadata.toolCalls && metadata.toolCalls.length > 0 ? "Calling tool..." : ""),
-                        role: 'assistant',
-                        metadata: {
-                            thinking: metadata.thinkingContent,
-                            toolCalls: metadata.toolCalls || []
-                        }
-                    }]);
-                    // call tool here
-                    if(metadata.toolCalls && metadata.toolCalls.length > 0) {
-                        await handleToolCall(metadata.toolCalls[0]);
-                    }
-                },
-                () => {
-                    setIsProcessing(false);
-                    setThinking('');
-                    setContent('');
-                }
-            );
+            await handleChatEndpoint(chatRequest);
+
         } catch (error) {
             console.error('Chat error:', error);
             setMessages(prev => [...prev, {
@@ -193,6 +177,7 @@ export function Agent() {
             setIsProcessing(false);
             setThinking('');
             setContent('');
+            setCurrentToolCall(null);
         }
     }
 
@@ -208,37 +193,8 @@ export function Agent() {
                 model: modelData?.model,
             };
 
-            await chat(
-                chatRequest,
-                0,
-                (thinking) => setThinking(thinking),
-                (content) => setContent(content),
-                (toolCalls: FunctionCall[]) => {
-                    console.log('toolCalls', toolCalls);
-                },
-                
-                async (finalContent, metadata) => {
-                    // console.log('finalContent', JSON);
-                    // console.log('metadata', JSON.stringify(metadata, null, 2));
-                    setMessages(prev => [...prev, {
-                        content: finalContent || (metadata.toolCalls && metadata.toolCalls.length > 0 ? "Calling tool..." : ""),
-                        role: 'assistant',
-                        metadata: {
-                            thinking: metadata.thinkingContent,
-                            toolCalls: metadata.toolCalls || []
-                        }
-                    }]);
-                    // call tool here
-                    if(metadata.toolCalls && metadata.toolCalls.length > 0) {
-                        await handleToolCall(metadata.toolCalls[0]);
-                    }
-                },
-                () => {
-                    setIsProcessing(false);
-                    setThinking('');
-                    setContent('');
-                }
-            );
+            await handleChatEndpoint(chatRequest);
+
         } catch (error) {
             console.error('Chat error:', error);
             setMessages(prev => [...prev, {
@@ -249,6 +205,7 @@ export function Agent() {
             setIsProcessing(false);
             setThinking('');
             setContent('');
+            setCurrentToolCall(null);
         }
     }
 
@@ -260,6 +217,7 @@ export function Agent() {
                 thinking={thinking}
                 currentContent={content}
                 isProcessing={isProcessing}
+                currentToolCall={currentToolCall}
             />
             {pendingToolCall && (
                 <ToolConfirmationDialog
@@ -269,17 +227,16 @@ export function Agent() {
                     onReject={handleToolConfirmation.reject}
                 />
             )}
-            <ChatInput 
-                onSend={handleNewMsgSend} 
-                commands={systemCmds} 
+            <ChatInput
+                onSend={handleNewMsgSend}
+                commands={systemCmds}
                 isProcessing={isProcessing}
-                currentToolCall={pendingToolCall}
+                currentToolCall={currentToolCall}
             />
             {activeCommand && (
                 <CommandModal
                     command={activeCommand}
                     onClose={() => setActiveCommand(null)}
-                    onExecute={handleCommandExecute}
                 />
             )}
         </>

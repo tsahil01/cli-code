@@ -57,7 +57,7 @@ export interface CommandOption {
     description: string;
     type: 'string' | 'number' | 'boolean' | 'select';
     required?: boolean;
-    choices?: string[];  // For type: 'select'
+    choices?: string[];
     default?: any;
 }
 
