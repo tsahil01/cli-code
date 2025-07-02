@@ -1,4 +1,4 @@
-import { ActiveFileInfo, ChangeProposalRequest, DiagnosticInfo, DiffInfo, OpenTabInfo, TextSelectionInfo } from "@/types";
+import { ActiveFileInfo, AnthropicFunctionCall, ChangeProposalRequest, CommandResponse, DiagnosticInfo, DiffInfo, FunctionCall, GeminiFunctionCall, Message, OpenTabInfo, TextSelectionInfo } from "@/types";
 import { exec, spawn } from "child_process";
 import fs from "fs";
 import os from "os";
@@ -6,6 +6,7 @@ import path from "path";
 import { getClient } from "./editor.js";
 
 const runningProcesses: { [key: string]: any } = {};
+
 
 const expandHomeDir = (filePath: string) => {
     if (filePath.startsWith('~')) {
@@ -183,7 +184,10 @@ export const open_file_vscode = (filePath: string, options: any) => {
         try {
             const client = getClient();
             client.sendCommand('openFile', [filePath], options);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to open file: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -195,7 +199,10 @@ export const write_file_vscode = (filePath: string, content: string) => {
         try {
             const client = getClient();
             client.sendCommand('writeFile', [filePath, content]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -207,7 +214,10 @@ export const delete_file = (filePath: string) => {
         try {
             const client = getClient();
             client.sendCommand('deleteFile', [filePath]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -219,7 +229,10 @@ export const select_text = (startLine: number, startChar: number, endLine: numbe
         try {
             const client = getClient();
             client.sendCommand('selectText', [startLine, startChar, endLine, endChar]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to select text: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -231,7 +244,10 @@ export const show_notification = (message: string, type: 'info' | 'warning' | 'e
         try {
             const client = getClient();
             client.sendCommand('showNotification', [message, type]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to show notification: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -243,7 +259,10 @@ export const propose_change_vscode = (changeProposal: ChangeProposalRequest) => 
         try {
             const client = getClient();
             client.sendCommand('proposeChange', [changeProposal]);
-            resolve(true);
+            client.onCommandResponse((response: CommandResponse) => {
+                const message = handleCommandResponse(response);
+                resolve(message);
+            });
         } catch (error) {
             reject(new Error(`Failed to propose change: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
@@ -309,4 +328,103 @@ export const get_diagnostics = () => {
             reject(new Error(`Failed to get diagnostics: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
     });
+}
+
+export const handleCommandResponse = (response: CommandResponse): Message => {
+    let content = '';
+    const data = response.data;
+    if(data.success) {
+        content = data.message;
+    } else {
+        content = `${data.error}`
+    }
+    return {
+        content: content,
+        role: 'user',
+        ignoreInDisplay: true,
+    }
+}
+
+export const runTool = async (tool: FunctionCall): Promise<any> => {
+    const toolName = (tool as AnthropicFunctionCall).name || (tool as GeminiFunctionCall).functionCall?.name;
+    const toolInput = (tool as AnthropicFunctionCall).input || (tool as GeminiFunctionCall).functionCall?.args || {};
+
+    if (!toolName) {
+        throw new Error('Tool name not found in function call');
+    }
+
+    try {
+        switch (toolName) {
+            case 'run_command':
+                return await run_command(toolInput.command || toolInput.cmd);
+            
+            case 'check_current_directory':
+                return await check_current_directory();
+            
+            case 'list_files':
+                return await list_files(toolInput.filePath || toolInput.path);
+            
+            case 'read_file':
+                return await read_file(toolInput.filePath || toolInput.path);
+            
+            case 'write_file':
+                return await write_file(toolInput.filePath || toolInput.path, toolInput.content);
+            
+            case 'open_file':
+                return await open_file(toolInput.filePath || toolInput.path);
+            
+            case 'open_browser':
+                return await open_browser(toolInput.url);
+            
+            case 'run_background_command':
+                return await run_background_command(toolInput.command || toolInput.cmd, toolInput.processId);
+            
+            case 'stop_process':
+                return await stop_process(toolInput.processId);
+            
+            case 'grep_search':
+                return await grep_search(toolInput.searchTerm, toolInput.filePath || toolInput.path);
+            
+            case 'is_process_running':
+                return await is_process_running(toolInput.processId);
+            
+            case 'open_file_vscode':
+                return await open_file_vscode(toolInput.filePath || toolInput.path, toolInput.options);
+            
+            case 'write_file_vscode':
+                return await write_file_vscode(toolInput.filePath || toolInput.path, toolInput.content);
+            
+            case 'delete_file':
+                return await delete_file(toolInput.filePath || toolInput.path);
+            
+            case 'select_text':
+                return await select_text(toolInput.startLine, toolInput.startChar, toolInput.endLine, toolInput.endChar);
+            
+            case 'show_notification':
+                return await show_notification(toolInput.message, toolInput.type);
+            
+            case 'propose_change_vscode':
+                return await propose_change_vscode(toolInput as ChangeProposalRequest);
+            
+            case 'get_active_file':
+                return await get_active_file();
+            
+            case 'get_open_tabs':
+                return await get_open_tabs();
+            
+            case 'get_text_selection':
+                return await get_text_selection();
+            
+            case 'get_diffs':
+                return await get_diffs();
+            
+            case 'get_diagnostics':
+                return await get_diagnostics();
+            
+            default:
+                throw new Error(`Unknown tool: ${toolName}`);
+        }
+    } catch (error) {
+        throw new Error(`Tool execution failed for ${toolName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
