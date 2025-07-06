@@ -183,6 +183,10 @@ export const open_file_vscode = (filePath: string, options: any) => {
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             client.sendCommand('openFile', [filePath], options);
             client.onCommandResponse((response: CommandResponse) => {
                 const message = handleCommandResponse(response);
@@ -198,6 +202,10 @@ export const write_file_vscode = (filePath: string, content: string) => {
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             client.sendCommand('writeFile', [filePath, content]);
             client.onCommandResponse((response: CommandResponse) => {
                 const message = handleCommandResponse(response);
@@ -228,6 +236,10 @@ export const select_text = (startLine: number, startChar: number, endLine: numbe
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             client.sendCommand('selectText', [startLine, startChar, endLine, endChar]);
             client.onCommandResponse((response: CommandResponse) => {
                 const message = handleCommandResponse(response);
@@ -273,6 +285,10 @@ export const get_active_file = () => {
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             const activeFile: ActiveFileInfo | null = client.getContext().activeFile;
             resolve(activeFile);
         } catch (error) {
@@ -285,6 +301,10 @@ export const get_open_tabs = () => {
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             const openTabs: OpenTabInfo[] | [] = client.getContext().openTabs;
             resolve(openTabs);
         } catch (error) {
@@ -297,6 +317,10 @@ export const get_text_selection = () => {
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             const textSelection: TextSelectionInfo | null = client.getContext().textSelection;
             resolve(textSelection);
         } catch (error) {
@@ -309,6 +333,10 @@ export const get_diffs = () => {
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             const diffs: DiffInfo[] | null = client.getContext().diffs;
             resolve(diffs);
         } catch (error) {
@@ -321,6 +349,10 @@ export const get_diagnostics = () => {
     return new Promise((resolve, reject) => {
         try {
             const client = getClient();
+            if (!client.canOperate()) {
+                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
+                return;
+            }
             const allDiagnostics: DiagnosticInfo[] | null = client.getContext().diagnostics;
             const diagnostics = allDiagnostics?.filter((d: DiagnosticInfo) => d.diagnostics.length > 0);
             resolve(diagnostics);

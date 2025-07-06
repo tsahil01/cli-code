@@ -10,8 +10,11 @@ class EditorContextClient {
     commandResponse: CommandResponse | null;
     private connectionPromise: Promise<void> | null;
     private resolveConnection: (() => void) | null;
+    private rejectConnection: ((error: Error) => void) | null;
     private contextCallback: ((context: ContextData) => void) | null;
     private commandCallback: ((response: CommandResponse) => void) | null;
+    private connectionStatus: 'connected' | 'disconnected' | 'connecting' | 'failed' = 'disconnected';
+    private allowWithoutConnection: boolean = false;
 
     constructor(host = 'localhost', port = 3210) {
         this.host = host;
@@ -29,19 +32,30 @@ class EditorContextClient {
         this.commandResponse = null;
         this.connectionPromise = null;
         this.resolveConnection = null;
+        this.rejectConnection = null;
         this.contextCallback = null;
         this.commandCallback = null;
     }
 
     connectWebSocket(): Promise<void> {
-        this.connectionPromise = new Promise((resolve) => {
+        this.connectionStatus = 'connecting';
+        this.connectionPromise = new Promise((resolve, reject) => {
             this.resolveConnection = resolve;
+            this.rejectConnection = reject;
         });
 
         this.ws = new WebSocket(this.wsUrl);
 
+        const connectionTimeout = setTimeout(() => {
+            if (this.connectionStatus === 'connecting' && this.rejectConnection) {
+                this.connectionStatus = 'failed';
+                this.rejectConnection(new Error('Connection timeout: Unable to connect to Editor Context Bridge'));
+            }
+        }, 5000);
+
         this.ws.on('open', () => {
-            console.log('Connected to Editor Context Bridge');
+            clearTimeout(connectionTimeout);
+            this.connectionStatus = 'connected';
             this.requestContext();
             if (this.resolveConnection) {
                 this.resolveConnection();
@@ -53,18 +67,23 @@ class EditorContextClient {
                 const message = JSON.parse(data.toString());
                 this.handleWebSocketMessage(message);
             } catch (error) {
-                console.error('Error parsing WebSocket message:', error);
             }
         });
 
         this.ws.on('close', () => {
-            console.log('Disconnected from Editor Context Bridge');
+            clearTimeout(connectionTimeout);
+            this.connectionStatus = 'disconnected';
             this.connectionPromise = null;
             this.resolveConnection = null;
+            this.rejectConnection = null;
         });
 
         this.ws.on('error', (error) => {
-            console.error('WebSocket error:', error);
+            clearTimeout(connectionTimeout);
+            this.connectionStatus = 'failed';
+            if (this.rejectConnection) {
+                this.rejectConnection(new Error(`WebSocket connection failed: ${error.message}`));
+            }
         });
 
         return this.connectionPromise;
@@ -89,8 +108,15 @@ class EditorContextClient {
     }
 
     async requestContext() {
+        if (!this.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected and operation is not allowed without connection');
+        }
         if (!this.isConnected()) {
-            await this.connectionPromise;
+            if (this.connectionPromise) {
+                await this.connectionPromise;
+            } else {
+                throw new Error('No active connection attempt');
+            }
         }
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ type: 'getContext' }));
@@ -98,8 +124,15 @@ class EditorContextClient {
     }
 
     async sendCommand(command: string, args: any[] = [], options: any = {}) {
+        if (!this.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected and operation is not allowed without connection');
+        }
         if (!this.isConnected()) {
-            await this.connectionPromise;
+            if (this.connectionPromise) {
+                await this.connectionPromise;
+            } else {
+                throw new Error('No active connection attempt');
+            }
         }
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({
@@ -127,6 +160,18 @@ class EditorContextClient {
 
     isConnected(): boolean {
         return this.ws?.readyState === WebSocket.OPEN;
+    }
+
+    getConnectionStatus(): 'connected' | 'disconnected' | 'connecting' | 'failed' {
+        return this.connectionStatus;
+    }
+
+    setAllowWithoutConnection(allow: boolean) {
+        this.allowWithoutConnection = allow;
+    }
+
+    canOperate(): boolean {
+        return this.isConnected() || this.allowWithoutConnection;
     }
 
     refreshContext() {
@@ -163,8 +208,27 @@ export const init = async (): Promise<EditorContextClient> => {
         return client;
     }
     client = new EditorContextClient('localhost', 3210);
-    await client.connectWebSocket();
+    try {
+        await client.connectWebSocket();
+    } catch (error) {
+    }
     return client;
+}
+
+export const getConnectionStatus = (): 'connected' | 'disconnected' | 'connecting' | 'failed' | 'not-initialized' => {
+    return client ? client.getConnectionStatus() : 'not-initialized';
+}
+
+export const setAllowWithoutConnection = (allow: boolean): void => {
+    if (client) {
+        client.setAllowWithoutConnection(allow);
+    }
+}
+
+export const retryConnection = async (): Promise<void> => {
+    if (client) {
+        await client.connectWebSocket();
+    }
 }
 
 
