@@ -79,11 +79,18 @@ export const MessageDisplay = ({
                         <Box 
                             paddingX={1}
                         >
+                            {message.content && message.content.length > 0 && (
                             <MarkdownRenderer
                                 content={message.content || ''}
-                                baseColor={message.role === 'user' ? "white" : "white"}
                                 dimmed={false}
                             />
+                            )}
+                            {(!message.content || message.content.length === 0) && message.metadata?.thinkingContent && (
+                            <MarkdownRenderer
+                                content={`${message.metadata?.thinkingContent}` || ''}
+                                    dimmed={true}
+                                />
+                            )}
                         </Box>
                     </Box>
                 );
@@ -96,9 +103,8 @@ export const MessageDisplay = ({
                     ) : (
                         <Box flexDirection="row">
                             <Text color="magenta">┃ </Text>
-                            <Box paddingX={1}>
+                            <Box paddingX={1} flexDirection="column">
                                 <LoadingIndicator />
-                                <Text color="cyan"> Processing</Text>
                             </Box>
                         </Box>
                     )}
@@ -106,8 +112,8 @@ export const MessageDisplay = ({
                     {thinking && (currentContent?.length === 0 || !currentContent) && (
                         <Box flexDirection="row">
                             <Text color="magenta">┃ </Text>
-                            <Box paddingX={1}>
-                                <Text color="cyan">Thinking: </Text>
+                            <Box paddingX={1} flexDirection="column">
+                                <Text color="cyan" bold>{"Thinking: \n"}</Text>
                                 <MarkdownRenderer
                                     content={thinking}
                                     baseColor="white"
@@ -120,8 +126,8 @@ export const MessageDisplay = ({
                     {currentContent && currentContent.length > 0 && (
                         <Box flexDirection="row">
                             <Text color="magenta">┃ </Text>
-                            <Box paddingX={1}>
-                                <Text color="cyan">Drafting: </Text>
+                            <Box paddingX={1} flexDirection="column">
+                                <Text color="cyan" bold>{"Drafting: \n"}</Text>
                                 <MarkdownRenderer
                                     content={currentContent}
                                     baseColor="white"
