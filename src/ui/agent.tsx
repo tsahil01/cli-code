@@ -20,7 +20,7 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [modelData, setModelData] = useState<ModelData>({
         provider: 'gemini',
-        model: 'gemini-2.5-flash'
+        model: 'gemini-2.5-pro'
     });
 
     useInput((input, key) => {
