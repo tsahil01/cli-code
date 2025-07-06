@@ -2,6 +2,7 @@ export { Header } from './header.js';
 export { ChatInput } from './chat-input.js';
 export { CommandModal } from './command-modal.js';
 export { CommandSuggestions } from './command-suggestions.js';
+export { ConnectionFailureDialog } from './connection-failure-dialog.js';
 export { FileSelector } from './file-selector.js';
 export { Initialization } from './initlization.js';
 export { InputDisplay } from './input-display.js';
