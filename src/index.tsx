@@ -4,12 +4,15 @@ import { Agent } from "./ui/agent.js";
 import { readConfigFile, appendConfigFile } from "./lib/configMngt.js";
 import { login } from "./lib/auth.js";
 import { Initialization } from "./ui/components/initlization.js";
-import { init } from "./lib/editor.js";
+import { ConnectionFailureDialog } from "./ui/components/index.js";
+import { init, getConnectionStatus, setAllowWithoutConnection, retryConnection } from "./lib/editor.js";
 
 function UI() {
     const [initializing, setInitializing] = useState(true);
     const [loggedIn, setLoggedIn] = useState(false);
     const [loginError, setLoginError] = useState<string>();
+    const [showConnectionDialog, setShowConnectionDialog] = useState(false);
+    const [editorConnectionResolved, setEditorConnectionResolved] = useState(false);
     
     const initialize = async () => {
         setInitializing(true);
@@ -59,9 +62,40 @@ function UI() {
         setInitializing(false);
     };
 
+    const checkEditorConnection = async () => {
+        await init();
+        const status = getConnectionStatus();
+        if (status === 'failed' || status === 'disconnected') {
+            setShowConnectionDialog(true);
+        } else {
+            setEditorConnectionResolved(true);
+        }
+    };
+
+    const handleConnectionRetry = async () => {
+        setShowConnectionDialog(false);
+        try {
+            await retryConnection();
+            const status = getConnectionStatus();
+            if (status === 'connected') {
+                setEditorConnectionResolved(true);
+            } else {
+                setShowConnectionDialog(true);
+            }
+        } catch (error) {
+            setShowConnectionDialog(true);
+        }
+    };
+
+    const handleConnectionContinue = () => {
+        setAllowWithoutConnection(true);
+        setShowConnectionDialog(false);
+        setEditorConnectionResolved(true);
+    };
+
     useEffect(() => {
         initialize();
-        init();
+        checkEditorConnection();
     }, []);
 
     if (initializing || !loggedIn) {
@@ -73,6 +107,28 @@ function UI() {
                 onLogin={handleLogin}
                 loginError={loginError}
             />
+        );
+    }
+
+    if (showConnectionDialog) {
+        return (
+            <Box flexDirection="column" marginX={2} width={"80%"} alignSelf="center">
+                <ConnectionFailureDialog 
+                    onRetry={handleConnectionRetry}
+                    onContinue={handleConnectionContinue}
+                />
+            </Box>
+        );
+    }
+
+    if (!editorConnectionResolved) {
+        return (
+            <Box flexDirection="column" marginX={2} width={"80%"} alignSelf="center">
+                <Initialization 
+                    isLoading={true} 
+                    isLoggedIn={true} 
+                />
+            </Box>
         );
     }
 
