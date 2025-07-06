@@ -182,8 +182,6 @@ export interface CommandResponse {
 }
 
 export interface FileChange {
-    startLine: number;  
-    endLine: number;   
     originalContent: string;
     proposedContent: string;
     description?: string;
