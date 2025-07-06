@@ -45,11 +45,12 @@ export function Agent() {
                     content: finalContent,
                     role: 'assistant',
                     metadata: {
-                        thinking: metadata.thinkingContent,
+                        thinkingContent: metadata.thinkingContent,
                         toolCalls: metadata.toolCalls || []
                     }
                 }]);
                 if (metadata.toolCalls && metadata.toolCalls.length > 0) {
+                    setCurrentToolCall(metadata.toolCalls[0]);
                     await handleToolCall(metadata.toolCalls[0]);
                 }
             },
