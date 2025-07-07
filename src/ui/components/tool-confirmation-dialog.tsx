@@ -23,24 +23,34 @@ export function ToolConfirmationDialog({ toolCall, onAccept, onAcceptAll, onReje
         if (input === 'y' || input === 'Y') {
             onAccept();
             return;
-        } 
+        }
         if (input === 'a' || input === 'A') {
             onAcceptAll();
             return;
-        } 
+        }
         if (input === 'n' || input === 'N' || key.escape) {
             onReject();
             return;
         }
     }, { isActive: true });
 
-    const functionName = 'functionCall' in toolCall ? toolCall.functionCall.name : toolCall.name;
-    const args = 'functionCall' in toolCall ? toolCall.functionCall.args : toolCall.input;
+    const functionName = 'functionCall' in toolCall
+        ? toolCall.functionCall.name
+        : 'function' in toolCall ? toolCall.function.name
+            : 'name' in toolCall ? toolCall.name
+                : 'unknown tool';
+    const args = 'functionCall' in toolCall
+        ? toolCall.functionCall.args
+        : "input" in toolCall
+            ? toolCall.input
+            : "function" in toolCall
+                ? toolCall.function.arguments
+                : {};
 
     return (
-        <Box 
-            flexDirection="column" 
-            borderStyle="round" 
+        <Box
+            flexDirection="column"
+            borderStyle="round"
             borderColor="cyan"
             paddingX={2}
             paddingY={1}
@@ -49,7 +59,7 @@ export function ToolConfirmationDialog({ toolCall, onAccept, onAcceptAll, onReje
             <Box>
                 <Text color="cyan" bold>⚡ Tool Execution Request</Text>
             </Box>
-            
+
             <Box flexDirection="column">
                 <Box>
                     <Text color="gray">Function: </Text>
@@ -58,11 +68,11 @@ export function ToolConfirmationDialog({ toolCall, onAccept, onAcceptAll, onReje
                 <Box>
                     <Text color="gray">Arguments:</Text>
                 </Box>
-                <Box 
-                    marginLeft={2} 
-                 
+                <Box
+                    marginLeft={2}
+
                     paddingX={1}
-                    borderStyle="single" 
+                    borderStyle="single"
                     borderColor="gray"
                 >
                     <Text dimColor>{JSON.stringify(args, null, 2)}</Text>

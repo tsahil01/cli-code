@@ -19,8 +19,8 @@ export function Agent() {
     const [pendingToolCall, setPendingToolCall] = useState<FunctionCall | null>(null);
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'gemini',
-        model: 'gemini-2.5-pro'
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-20240620'
     });
 
     useInput((input, key) => {
@@ -69,6 +69,7 @@ export function Agent() {
         if (config.acceptAllToolCalls) {
             try {
                 setCurrentToolCall(toolCall);
+                console.log('Executing tool call:', toolCall);
                 const result = await runTool(toolCall);
                 let newMsg: Message = {
                     content: JSON.stringify(result, null, 2),
@@ -99,6 +100,7 @@ export function Agent() {
             if (!pendingToolCall) return;
             try {
                 setCurrentToolCall(pendingToolCall);
+                                console.log('Executing tool call:', pendingToolCall);
                 const result = await runTool(pendingToolCall);
                 let newMsg: Message = {
                     content: JSON.stringify(result, null, 2),
@@ -164,6 +166,7 @@ export function Agent() {
                 messages: [...messages, { content: userMessage, role: 'user' }],
                 provider: modelData?.provider,
                 model: modelData?.model,
+                base_url: "https://openrouter.ai/api/v1"
             };
 
             await handleChatEndpoint(chatRequest);
@@ -192,6 +195,7 @@ export function Agent() {
                 messages: msgs,
                 provider: modelData?.provider,
                 model: modelData?.model,
+                base_url: "https://openrouter.ai/api/v1"
             };
 
             await handleChatEndpoint(chatRequest);
