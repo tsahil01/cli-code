@@ -55,7 +55,9 @@ export const MessageDisplay = ({
     const getToolName = (toolCall: FunctionCall) => {
         return 'functionCall' in toolCall 
             ? toolCall.functionCall.name 
-            : toolCall.name;
+            : 'function' in toolCall ? toolCall.function.name
+            : 'name' in toolCall ? toolCall.name
+            : 'unknown tool';
     };
 
     return (
