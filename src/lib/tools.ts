@@ -1,4 +1,4 @@
-import { ActiveFileInfo, AnthropicFunctionCall, ChangeProposalRequest, CommandResponse, DiagnosticInfo, DiffInfo, FunctionCall, GeminiFunctionCall, Message, OpenTabInfo, TextSelectionInfo } from "@/types";
+import { ActiveFileInfo, AnthropicFunctionCall, ChangeProposalRequest, CommandResponse, DiagnosticInfo, DiffInfo, FunctionCall, GeminiFunctionCall, Message, OpenAIFunctionCall, OpenTabInfo, TextSelectionInfo } from "@/types";
 import { exec, spawn } from "child_process";
 import fs from "fs";
 import os from "os";
@@ -378,8 +378,17 @@ export const handleCommandResponse = (response: CommandResponse): Message => {
 }
 
 export const runTool = async (tool: FunctionCall): Promise<any> => {
-    const toolName = (tool as AnthropicFunctionCall).name || (tool as GeminiFunctionCall).functionCall?.name;
-    const toolInput = (tool as AnthropicFunctionCall).input || (tool as GeminiFunctionCall).functionCall?.args || {};
+    const toolName = (tool as AnthropicFunctionCall).name || (tool as GeminiFunctionCall).functionCall?.name || (tool as OpenAIFunctionCall).function.name || null;
+    
+    let toolInput: Record<string, any> = {};
+    if ((tool as AnthropicFunctionCall).input) {
+        toolInput = (tool as AnthropicFunctionCall).input || {};
+    } else if ((tool as GeminiFunctionCall).functionCall?.args) {
+        toolInput = (tool as GeminiFunctionCall).functionCall.args || {};
+    } else if ((tool as OpenAIFunctionCall).function?.arguments) {
+        const args = (tool as OpenAIFunctionCall).function.arguments;
+        toolInput = args ? (typeof args === 'string' ? JSON.parse(args) : args) : {};
+    }
 
     if (!toolName) {
         throw new Error('Tool name not found in function call');

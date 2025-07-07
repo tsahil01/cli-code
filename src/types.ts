@@ -23,7 +23,17 @@ export interface GeminiFunctionCall {
     };
 }
 
-export type FunctionCall = AnthropicFunctionCall | GeminiFunctionCall;
+export interface OpenAIFunctionCall {
+    type: 'tool_use';
+    id: string;
+    function: {
+        name: string;
+        arguments?: Record<string, any>;
+    };
+    index?: number; // OpenAI includes an index for tool calls
+}
+
+export type FunctionCall = AnthropicFunctionCall | GeminiFunctionCall | OpenAIFunctionCall;
 
 export interface MessageMetadata {
     thinkingContent?: string;
@@ -203,7 +213,7 @@ export interface ChangeProposalRequest {
 
 export interface ChatRequest {
     messages: Message[];
-    provider: "openai" | "anthropic" | "gemini";
+    provider: "openai" | "anthropic" | "gemini" | "other";
     base_url?: string;
     model: string;
     temperature?: number;
@@ -211,6 +221,6 @@ export interface ChatRequest {
 }
 
 export interface ModelData {
-    provider: "anthropic" | "openai" | "gemini",
+    provider: "anthropic" | "openai" | "gemini" | "other",
     model: string
 }
