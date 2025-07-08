@@ -126,7 +126,6 @@ export function Agent() {
             try {
                 setCurrentToolCall(toolCall);
                 addToolCallStatus(toolCall, 'pending');
-                console.log('Executing tool call:', toolCall);
                 const result = await runTool(toolCall);
                 addToolCallStatus(toolCall, 'success');
                 let newMsg: Message = {
@@ -161,7 +160,6 @@ export function Agent() {
             try {
                 setCurrentToolCall(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'pending');
-                console.log('Executing tool call:', pendingToolCall);
                 const result = await runTool(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'success');
                 let newMsg: Message = {

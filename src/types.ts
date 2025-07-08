@@ -1,6 +1,7 @@
 export interface Message {
     content?: string;
     role: 'user' | 'system' | 'assistant';
+    isError?: boolean;
     ignoreInLLM?: boolean;
     ignoreInDisplay?: boolean;
     thinking?: boolean;

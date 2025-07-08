@@ -31,7 +31,6 @@ function UI() {
                     setLoginError('Invalid token. Please try again.');
                 }
             } catch (error) {
-                console.error("Login failed:", error);
                 setLoggedIn(false);
                 setLoginError('Authentication failed. Please try again.');
             }
@@ -43,11 +42,8 @@ function UI() {
         setInitializing(true);
         setLoginError(undefined);
         try {
-            console.log("Saving new token...");
             await appendConfigFile({ refreshToken: token });
-            console.log("Attempting login with new token...");
             const accessToken = await login(token);
-            console.log("Login result:", !!accessToken);
             if (accessToken) {
                 setLoggedIn(true);
             } else {
@@ -55,7 +51,6 @@ function UI() {
                 setLoginError('Invalid token. Please try again.');
             }
         } catch (error) {
-            console.error("Login failed:", error);
             setLoggedIn(false);
             setLoginError('Authentication failed. Please try again.');
         }
