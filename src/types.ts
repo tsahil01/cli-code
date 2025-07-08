@@ -1,6 +1,7 @@
 export interface Message {
     content?: string;
     role: 'user' | 'system' | 'assistant';
+    isError?: boolean;
     ignoreInLLM?: boolean;
     ignoreInDisplay?: boolean;
     thinking?: boolean;
@@ -210,6 +211,14 @@ export interface ChangeProposalRequest {
     title: string;
     filePath: string;
     changes: FileChange[];
+}
+
+export type ChatErrorType = 'rate_limit' | 'auth_error' | 'network_error' | 'api_error' | 'unknown';
+
+export interface ChatError {
+    type: ChatErrorType;
+    message: string;
+    details?: any;
 }
 
 export interface ChatRequest {

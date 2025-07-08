@@ -3,6 +3,20 @@ import { WORKER_URL } from "./const.js";
 import { readConfigFile } from "./configMngt.js";
 import { handleTokenExpiry } from "./auth.js";
 
+interface ChatError {
+    type: 'rate_limit' | 'auth_error' | 'network_error' | 'api_error' | 'unknown';
+    message: string;
+    details?: any;
+}
+
+const ERROR_MESSAGES = {
+    rate_limit: 'Rate limit exceeded. Please try again in a few moments.',
+    auth_error: 'Authentication failed. Please try logging in again.',
+    network_error: 'Network error occurred. Please check your connection.',
+    api_error: 'API error occurred. Please try again.',
+    unknown: 'An unexpected error occurred.'
+};
+
 export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCallback: (thinking: string) => void, contentCallback: (content: string) => void, toolCallCallback: (toolCall: FunctionCall[]) => void, finalCallback: (content: string, metadata: any) => void, doneCallback: (metadata: any) => void) {
     if (retryCount > 1) {
         console.error("Max retries reached for chat. Kindly login again.");
@@ -39,13 +53,48 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
 
         if (!response.ok) {
             const errorData = await response.json();
-            if (errorData.error) {
-                const newAccessToken = await handleTokenExpiry(errorData);
-                if (newAccessToken) {
-                    return chat(data, retryCount + 1, thinkingCallback, contentCallback, toolCallCallback, finalCallback, doneCallback);
+            
+            // Handle different error types
+            let chatError: ChatError;
+            
+            if (response.status === 429) {
+                chatError = {
+                    type: 'rate_limit',
+                    message: ERROR_MESSAGES.rate_limit,
+                    details: errorData
+                };
+            } else if (response.status === 401 || response.status === 403) {
+                if (errorData.error) {
+                    const newAccessToken = await handleTokenExpiry(errorData);
+                    if (newAccessToken) {
+                        return chat(data, retryCount + 1, thinkingCallback, contentCallback, toolCallCallback, finalCallback, doneCallback);
+                    }
                 }
+                chatError = {
+                    type: 'auth_error',
+                    message: ERROR_MESSAGES.auth_error,
+                    details: errorData
+                };
+            } else if (response.status >= 500) {
+                chatError = {
+                    type: 'api_error',
+                    message: ERROR_MESSAGES.api_error,
+                    details: errorData
+                };
+            } else {
+                chatError = {
+                    type: 'unknown',
+                    message: `${ERROR_MESSAGES.unknown} (Status: ${response.status})`,
+                    details: errorData
+                };
             }
-            throw new Error(`HTTP error! status: ${response.status}`);
+            
+            // Call doneCallback with error information
+            doneCallback({
+                error: chatError
+            });
+            
+            throw new Error(chatError.message);
         }
 
         const reader = response.body?.getReader();
@@ -131,6 +180,28 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         }
     } catch (error) {
         console.error("Error chatting:", error);
-        throw error;
+        
+        let chatError: ChatError;
+        
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            chatError = {
+                type: 'network_error',
+                message: ERROR_MESSAGES.network_error,
+                details: error
+            };
+        } else {
+            chatError = {
+                type: 'unknown',
+                message: ERROR_MESSAGES.unknown,
+                details: error
+            };
+        }
+        
+        // Call doneCallback with error information
+        doneCallback({
+            error: chatError
+        });
+        
+        throw new Error(chatError.message);
     }
 }

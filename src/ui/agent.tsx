@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'gemini',
-        model: 'gemini-2.5-pro',
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-20241022',
     });
 
     useInput((input, key) => {
@@ -126,7 +126,6 @@ export function Agent() {
             try {
                 setCurrentToolCall(toolCall);
                 addToolCallStatus(toolCall, 'pending');
-                console.log('Executing tool call:', toolCall);
                 const result = await runTool(toolCall);
                 addToolCallStatus(toolCall, 'success');
                 let newMsg: Message = {
@@ -161,7 +160,6 @@ export function Agent() {
             try {
                 setCurrentToolCall(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'pending');
-                console.log('Executing tool call:', pendingToolCall);
                 const result = await runTool(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'success');
                 let newMsg: Message = {

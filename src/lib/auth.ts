@@ -69,7 +69,6 @@ export async function handleTokenExpiry(data: any): Promise<string | null> {
     if (data.error) {
         const details = data.error.details;
         if (details?.name === "TokenExpiredError") { 
-            console.log("Token expired, refreshing...");
             const newAccessToken = await refreshToken();
             return newAccessToken;
         } else if (details?.name === "JsonWebTokenError") {
