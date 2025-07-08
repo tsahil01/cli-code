@@ -256,7 +256,8 @@ export const propose_change_vscode = async (changeProposal: ChangeProposalReques
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
         
-        const response = await client.sendCommandWithPromise('proposeChange', [changeProposal]);
+        // Use 60 seconds timeout for user interaction tools
+        const response = await client.sendCommandWithPromise('proposeChange', [changeProposal], {}, 60000);
         return handleCommandResponse(response);
     } catch (error) {
         throw new Error(`Failed to propose change: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -332,11 +333,26 @@ export const get_diagnostics = async () => {
 export const handleCommandResponse = (response: CommandResponse): Message => {
     let content = '';
     const data = response.data;
-    if(data.success) {
-        content = data.message;
-    } else {
-        content = `${data.error}`
+    
+    if (data.data && data.data.message && data.data.message.includes('Change proposal')) {
+        if (data.data.accepted) {
+            content = `Change proposal accepted and applied successfully!`;
+        } else if (data.data.message.includes('dismissed')) {
+            content = `Change proposal was dismissed by user.`;
+        } else {
+            content = `${data.data.message}`;
+        }
     }
+    else if (data.success) {
+        if (data.data && data.data.message && typeof data.data.message === 'string') {
+            content = data.data.message;
+        } else {
+            content = data.message || 'Command executed successfully';
+        }
+    } else {
+        content = `Error: ${data.error || 'Unknown error occurred'}`;
+    }
+    
     return {
         content: content,
         role: 'user',
