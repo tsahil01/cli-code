@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'anthropic',
-        model: 'claude-3-5-sonnet-20241022',
+        provider: 'gemini',
+        model: 'gemini-2.5-pro',
     });
 
     useInput((input, key) => {
@@ -131,20 +131,26 @@ export function Agent() {
                 let newMsg: Message = {
                     content: JSON.stringify(result, null, 2),
                     role: 'user',
-                    ignoreInDisplay: true
+                    ignoreInDisplay: false
                 }
-                setMessages(prev => [...prev, newMsg]);
-                handleSend([...messages, newMsg]);
+                setMessages(prev => {
+                    const updatedMessages = [...prev, newMsg];
+                    setTimeout(() => handleSend(updatedMessages), 0);
+                    return updatedMessages;
+                });
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 addToolCallStatus(toolCall, 'error', errorMessage);
                 const errorMsg: Message = {
                     content: `Tool execution failed: ${errorMessage}`,
                     role: 'user',
-                    ignoreInDisplay: true
+                    ignoreInDisplay: false
                 }
-                setMessages(prev => [...prev, errorMsg]);
-                handleSend([...messages, errorMsg]);
+                setMessages(prev => {
+                    const updatedMessages = [...prev, errorMsg];
+                    setTimeout(() => handleSend(updatedMessages), 0);
+                    return updatedMessages;
+                });
             } finally {
                 setCurrentToolCall(null);
             }
@@ -167,8 +173,11 @@ export function Agent() {
                     role: 'user',
                     ignoreInDisplay: true
                 }
-                handleSend([...messages, newMsg]);
-                setMessages(prev => [...prev, newMsg]);
+                setMessages(prev => {
+                    const updatedMessages = [...prev, newMsg];
+                    setTimeout(() => handleSend(updatedMessages), 0);
+                    return updatedMessages;
+                });
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : 'Unknown error';
                 addToolCallStatus(pendingToolCall, 'error', errorMessage);
@@ -176,8 +185,11 @@ export function Agent() {
                     content: `Tool execution failed: ${errorMessage}`,
                     role: 'user'
                 }
-                setMessages(prev => [...prev, errorMsg]);
-                handleSend([...messages, errorMsg]);
+                setMessages(prev => {
+                    const updatedMessages = [...prev, errorMsg];
+                    setTimeout(() => handleSend(updatedMessages), 0);
+                    return updatedMessages;
+                });
             } finally {
                 setPendingToolCall(null);
                 setCurrentToolCall(null);
@@ -195,8 +207,11 @@ export function Agent() {
                 role: 'user',
                 ignoreInDisplay: true
             }
-            setMessages(prev => [...prev, newMsg]);
-            handleSend([...messages, newMsg]);
+            setMessages(prev => {
+                const updatedMessages = [...prev, newMsg];
+                setTimeout(() => handleSend(updatedMessages), 0);
+                return updatedMessages;
+            });
         }
     };
 
@@ -218,33 +233,40 @@ export function Agent() {
             ? message + `\n\n\nI have attached files for your reference: ${files.map(f => f.path).join(", ")}.`
             : message;
 
-        setMessages(prev => [...prev, { content: userMessage, role: 'user' }]);
         setIsProcessing(true);
         setThinking('');
         setContent('');
 
-        try {
-            const chatRequest: ChatRequest = {
-                messages: [...messages, { content: userMessage, role: 'user' }],
-                provider: modelData?.provider,
-                model: modelData?.model,
-                base_url: "https://openrouter.ai/api/v1"
-            };
+        setMessages(prev => {
+            const updatedMessages = [...prev, { content: userMessage, role: 'user' as const }];
+            
+            setTimeout(async () => {
+                try {
+                    const chatRequest: ChatRequest = {
+                        messages: updatedMessages,
+                        provider: modelData?.provider,
+                        model: modelData?.model,
+                        base_url: "https://openrouter.ai/api/v1"
+                    };
 
-            await handleChatEndpoint(chatRequest);
+                    await handleChatEndpoint(chatRequest);
 
-        } catch (error) {
-            console.error('Chat error:', error);
-            setMessages(prev => [...prev, {
-                content: `Error: ${error instanceof Error ? error.message : 'An unknown error occurred'}`,
-                role: 'system',
-                ignoreInLLM: true
-            }]);
-            setIsProcessing(false);
-            setThinking('');
-            setContent('');
-            setCurrentToolCall(null);
-        }
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    setMessages(prev => [...prev, {
+                        content: `Error: ${error instanceof Error ? error.message : 'An unknown error occurred'}`,
+                        role: 'system',
+                        ignoreInLLM: true
+                    }]);
+                    setIsProcessing(false);
+                    setThinking('');
+                    setContent('');
+                    setCurrentToolCall(null);
+                }
+            }, 0);
+            
+            return updatedMessages;
+        });
     }
 
     const handleSend = async (msgs: Message[]) => {
@@ -284,7 +306,6 @@ export function Agent() {
                 thinking={thinking}
                 currentContent={content}
                 isProcessing={isProcessing}
-                currentToolCall={currentToolCall}
             />
             {pendingToolCall && (
                 <ToolConfirmationDialog
