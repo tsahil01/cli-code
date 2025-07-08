@@ -403,40 +403,40 @@ export const runTool = async (tool: FunctionCall): Promise<any> => {
                 return await check_current_directory();
             
             case 'list_files':
-                return await list_files(toolInput.filePath || toolInput.path);
+                return await list_files(toolInput.filePath || toolInput.path || toolInput.directory);
             
             case 'read_file':
-                return await read_file(toolInput.filePath || toolInput.path);
+                return await read_file(toolInput.filePath || toolInput.path || toolInput.file);
             
             case 'write_file':
-                return await write_file(toolInput.filePath || toolInput.path, toolInput.content);
+                return await write_file(toolInput.filePath || toolInput.path || toolInput.file, toolInput.content);
             
             case 'open_file':
-                return await open_file(toolInput.filePath || toolInput.path);
+                return await open_file(toolInput.filePath || toolInput.path || toolInput.file);
             
             case 'open_browser':
                 return await open_browser(toolInput.url);
             
             case 'run_background_command':
-                return await run_background_command(toolInput.command || toolInput.cmd, toolInput.processId);
+                return await run_background_command(toolInput.command || toolInput.cmd, toolInput.processId || toolInput.id);
             
             case 'stop_process':
-                return await stop_process(toolInput.processId);
+                return await stop_process(toolInput.processId || toolInput.id);
             
             case 'grep_search':
-                return await grep_search(toolInput.searchTerm, toolInput.filePath || toolInput.path);
+                return await grep_search(toolInput.searchTerm || toolInput.term || toolInput.search, toolInput.filePath || toolInput.path || toolInput.directory);
             
             case 'is_process_running':
-                return await is_process_running(toolInput.processId);
+                return await is_process_running(toolInput.processId || toolInput.id);
             
             case 'open_file_vscode':
-                return await open_file_vscode(toolInput.filePath || toolInput.path, toolInput.options);
+                return await open_file_vscode(toolInput.filePath || toolInput.path || toolInput.file, toolInput.options);
             
             case 'write_file_vscode':
-                return await write_file_vscode(toolInput.filePath || toolInput.path, toolInput.content);
+                return await write_file_vscode(toolInput.filePath || toolInput.path || toolInput.file, toolInput.content);
             
             case 'delete_file':
-                return await delete_file(toolInput.filePath || toolInput.path);
+                return await delete_file(toolInput.filePath || toolInput.path || toolInput.file);
             
             case 'select_text':
                 return await select_text(toolInput.startLine, toolInput.startChar, toolInput.endLine, toolInput.endChar);

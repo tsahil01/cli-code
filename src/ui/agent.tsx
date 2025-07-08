@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Header, ChatInput } from "./components/index.js";
-import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat } from "../types.js";
+import { Header, ChatInput, ToolStatusDisplay } from "./components/index.js";
+import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
 import { ToolConfirmationDialog } from './components/tool-confirmation-dialog.js';
@@ -18,9 +18,10 @@ export function Agent() {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [pendingToolCall, setPendingToolCall] = useState<FunctionCall | null>(null);
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
+    const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'anthropic',
-        model: 'claude-3-5-sonnet-20240620'
+        provider: 'gemini',
+        model: 'gemini-2.5-pro',
     });
 
     useInput((input, key) => {
@@ -28,6 +29,61 @@ export function Agent() {
             setActiveCommand(null);
         }
     });
+
+    const generateToolCallId = (toolCall: FunctionCall) => {
+        const toolName = (toolCall as AnthropicFunctionCall).name || 
+                        (toolCall as GeminiFunctionCall).functionCall?.name || 
+                        (toolCall as any).function?.name || 
+                        'unknown_tool';
+        
+        const existingId = (toolCall as any).id;
+        if (existingId) return existingId;
+        
+        const args = (toolCall as AnthropicFunctionCall).input || 
+                    (toolCall as GeminiFunctionCall).functionCall?.args || 
+                    (toolCall as any).function?.arguments || {};
+        const argsString = JSON.stringify(args);
+        
+        const hashString = `${toolName}_${argsString}`;
+        let hash = 0;
+        for (let i = 0; i < hashString.length; i++) {
+            const char = hashString.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return `tool_${Math.abs(hash)}_${toolName}`;
+    };
+
+    const addToolCallStatus = (toolCall: FunctionCall, status: 'pending' | 'success' | 'error', errorMessage?: string) => {
+        const toolName = (toolCall as AnthropicFunctionCall).name || 
+                        (toolCall as GeminiFunctionCall).functionCall?.name || 
+                        (toolCall as any).function?.name || 
+                        'unknown_tool';
+        
+        const toolCallId = generateToolCallId(toolCall);
+        
+        setToolCallHistory(prev => {
+            const updated = [...prev];
+            const existingIndex = updated.findIndex(tc => tc.id === toolCallId);
+            
+            if (existingIndex >= 0) {
+                updated[existingIndex] = {
+                    ...updated[existingIndex],
+                    status,
+                    errorMessage: errorMessage || updated[existingIndex].errorMessage
+                };
+            } else {
+                updated.push({
+                    id: toolCallId,
+                    name: toolName,
+                    status,
+                    timestamp: Date.now(),
+                    errorMessage
+                });
+            }
+            return updated.slice(-10);
+        });
+    };
 
     async function handleChatEndpoint(chatRequest: ChatRequest) {
         return await chat(
@@ -69,8 +125,10 @@ export function Agent() {
         if (config.acceptAllToolCalls) {
             try {
                 setCurrentToolCall(toolCall);
+                addToolCallStatus(toolCall, 'pending');
                 console.log('Executing tool call:', toolCall);
                 const result = await runTool(toolCall);
+                addToolCallStatus(toolCall, 'success');
                 let newMsg: Message = {
                     content: JSON.stringify(result, null, 2),
                     role: 'user',
@@ -79,8 +137,10 @@ export function Agent() {
                 setMessages(prev => [...prev, newMsg]);
                 handleSend([...messages, newMsg]);
             } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                addToolCallStatus(toolCall, 'error', errorMessage);
                 const errorMsg: Message = {
-                    content: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    content: `Tool execution failed: ${errorMessage}`,
                     role: 'user',
                     ignoreInDisplay: true
                 }
@@ -100,8 +160,10 @@ export function Agent() {
             if (!pendingToolCall) return;
             try {
                 setCurrentToolCall(pendingToolCall);
-                                console.log('Executing tool call:', pendingToolCall);
+                addToolCallStatus(pendingToolCall, 'pending');
+                console.log('Executing tool call:', pendingToolCall);
                 const result = await runTool(pendingToolCall);
+                addToolCallStatus(pendingToolCall, 'success');
                 let newMsg: Message = {
                     content: JSON.stringify(result, null, 2),
                     role: 'user',
@@ -110,8 +172,10 @@ export function Agent() {
                 handleSend([...messages, newMsg]);
                 setMessages(prev => [...prev, newMsg]);
             } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                addToolCallStatus(pendingToolCall, 'error', errorMessage);
                 const errorMsg: Message = {
-                    content: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    content: `Tool execution failed: ${errorMessage}`,
                     role: 'user'
                 }
                 setMessages(prev => [...prev, errorMsg]);
@@ -232,6 +296,7 @@ export function Agent() {
                     onReject={handleToolConfirmation.reject}
                 />
             )}
+            <ToolStatusDisplay toolCalls={toolCallHistory} />
             <ChatInput
                 onSend={handleNewMsgSend}
                 commands={systemCmds}

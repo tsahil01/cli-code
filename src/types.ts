@@ -15,8 +15,9 @@ export interface AnthropicFunctionCall {
 }
 
 export interface GeminiFunctionCall {
-    type: 'tool_use';
-    id: string;
+    type?: 'tool_use';
+    id?: string;
+    thoughtSignature?: string;
     functionCall: {
         name: string;
         args?: Record<string, any>;
@@ -30,7 +31,7 @@ export interface OpenAIFunctionCall {
         name: string;
         arguments?: Record<string, any>;
     };
-    index?: number; // OpenAI includes an index for tool calls
+    index?: number;
 }
 
 export type FunctionCall = AnthropicFunctionCall | GeminiFunctionCall | OpenAIFunctionCall;
@@ -223,4 +224,12 @@ export interface ChatRequest {
 export interface ModelData {
     provider: "anthropic" | "openai" | "gemini" | "other",
     model: string
+}
+
+export interface ToolCallStatus {
+    id: string;
+    name: string;
+    status: 'pending' | 'success' | 'error';
+    timestamp: number;
+    errorMessage?: string;
 }

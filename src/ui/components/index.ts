@@ -11,4 +11,5 @@ export { MarkdownRenderer } from './markdown-renderer.js';
 export { MessageDisplay } from './message-display.js';
 export { AttachedFiles } from './attached-files.js';
 export { ToolConfirmationDialog } from './tool-confirmation-dialog.js';
-export { useChatInput } from './use-chat-input.js'; 
+export { useChatInput } from './use-chat-input.js';
+export { ToolStatusDisplay } from "./tool-status-display.js"; 
