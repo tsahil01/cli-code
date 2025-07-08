@@ -122,6 +122,17 @@ class EditorContextClient {
                         this.pendingCommands.delete(message.requestId);
                         pending.resolve(this.commandResponse);
                     }
+                } else if (message.requestId) {
+                } else {
+                    if (this.pendingCommands.size > 0) {
+                        const firstPending = this.pendingCommands.values().next().value;
+                        if (firstPending && this.commandResponse) {
+                            const requestId = Array.from(this.pendingCommands.keys())[0];
+                            clearTimeout(firstPending.timeout);
+                            this.pendingCommands.delete(requestId);
+                            firstPending.resolve(this.commandResponse);
+                        }
+                    }
                 }
                 
                 if (this.commandCallback && this.commandResponse) {

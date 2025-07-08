@@ -128,8 +128,13 @@ export function Agent() {
                 addToolCallStatus(toolCall, 'pending');
                 const result = await runTool(toolCall);
                 addToolCallStatus(toolCall, 'success');
+                
+                const content = (result && typeof result === 'object' && 'content' in result) 
+                    ? result.content 
+                    : JSON.stringify(result, null, 2);
+                
                 let newMsg: Message = {
-                    content: JSON.stringify(result, null, 2),
+                    content: content,
                     role: 'user',
                     ignoreInDisplay: false
                 }
@@ -168,8 +173,13 @@ export function Agent() {
                 addToolCallStatus(pendingToolCall, 'pending');
                 const result = await runTool(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'success');
+                
+                const content = (result && typeof result === 'object' && 'content' in result) 
+                    ? result.content 
+                    : JSON.stringify(result, null, 2);
+                
                 let newMsg: Message = {
-                    content: JSON.stringify(result, null, 2),
+                    content: content,
                     role: 'user',
                     ignoreInDisplay: true
                 }
