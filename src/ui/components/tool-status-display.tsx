@@ -8,8 +8,7 @@ interface ToolStatusDisplayProps {
 
 export function ToolStatusDisplay({ toolCalls }: ToolStatusDisplayProps) {
     const [, forceUpdate] = useState({});
-
-    // Force re-render every second to update the time-based filtering
+    
     useEffect(() => {
         const interval = setInterval(() => {
             forceUpdate({});
@@ -39,13 +38,14 @@ export function ToolStatusDisplay({ toolCalls }: ToolStatusDisplayProps) {
         }
     };
 
-    // Filter out completed tools older than 3 seconds, but keep pending and recent completed ones
     const currentTime = Date.now();
     const filteredToolCalls = toolCalls.filter(toolCall => {
         if (toolCall.status === 'pending') return true;
-        if (toolCall.status === 'error') return true;
+        if (toolCall.status === 'error') {
+            return (currentTime - toolCall.timestamp) < 5000;
+        }
         if (toolCall.status === 'success') {
-            return (currentTime - toolCall.timestamp) < 3000; // Keep successful ones for 3 seconds
+            return (currentTime - toolCall.timestamp) < 3000;
         }
         return true;
     });
