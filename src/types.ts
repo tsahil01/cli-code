@@ -213,6 +213,14 @@ export interface ChangeProposalRequest {
     changes: FileChange[];
 }
 
+export type ChatErrorType = 'rate_limit' | 'auth_error' | 'network_error' | 'api_error' | 'unknown';
+
+export interface ChatError {
+    type: ChatErrorType;
+    message: string;
+    details?: any;
+}
+
 export interface ChatRequest {
     messages: Message[];
     provider: "openai" | "anthropic" | "gemini" | "other";

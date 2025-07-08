@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'gemini',
-        model: 'gemini-2.5-pro',
+        provider: 'anthropic',
+        model: 'claude-3-5-sonnet-20241022',
     });
 
     useInput((input, key) => {
