@@ -15,6 +15,8 @@ class EditorContextClient {
     private commandCallback: ((response: CommandResponse) => void) | null;
     private connectionStatus: 'connected' | 'disconnected' | 'connecting' | 'failed' = 'disconnected';
     private allowWithoutConnection: boolean = false;
+    private pendingCommands: Map<string, { resolve: (response: CommandResponse) => void; reject: (error: Error) => void; timeout: NodeJS.Timeout }> = new Map();
+    private requestIdCounter: number = 0;
 
     constructor(host = 'localhost', port = 3210) {
         this.host = host;
@@ -76,11 +78,24 @@ class EditorContextClient {
             this.connectionPromise = null;
             this.resolveConnection = null;
             this.rejectConnection = null;
+            
+            this.pendingCommands.forEach(({ timeout, reject }) => {
+                clearTimeout(timeout);
+                reject(new Error('WebSocket connection closed'));
+            });
+            this.pendingCommands.clear();
         });
 
         this.ws.on('error', (error) => {
             clearTimeout(connectionTimeout);
             this.connectionStatus = 'failed';
+            
+            this.pendingCommands.forEach(({ timeout, reject }) => {
+                clearTimeout(timeout);
+                reject(new Error(`WebSocket error: ${error.message}`));
+            });
+            this.pendingCommands.clear();
+            
             if (this.rejectConnection) {
                 this.rejectConnection(new Error(`WebSocket connection failed: ${error.message}`));
             }
@@ -99,6 +114,16 @@ class EditorContextClient {
                 break;
             case 'commandResponse':
                 this.commandResponse = message.data;
+                
+                if (message.requestId && this.pendingCommands.has(message.requestId)) {
+                    const pending = this.pendingCommands.get(message.requestId);
+                    if (pending && this.commandResponse) {
+                        clearTimeout(pending.timeout);
+                        this.pendingCommands.delete(message.requestId);
+                        pending.resolve(this.commandResponse);
+                    }
+                }
+                
                 if (this.commandCallback && this.commandResponse) {
                     this.commandCallback(this.commandResponse);
                 }
@@ -142,7 +167,48 @@ class EditorContextClient {
         }
     }
 
+    async sendCommandWithPromise(command: string, args: any[] = [], options: any = {}, timeoutMs: number = 10000): Promise<CommandResponse> {
+        if (!this.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected and operation is not allowed without connection');
+        }
+        if (!this.isConnected()) {
+            if (this.connectionPromise) {
+                await this.connectionPromise;
+            } else {
+                throw new Error('No active connection attempt');
+            }
+        }
+
+        return new Promise((resolve, reject) => {
+            if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+                reject(new Error('WebSocket is not connected'));
+                return;
+            }
+
+            const requestId = `req_${++this.requestIdCounter}_${Date.now()}`;
+            
+            const timeout = setTimeout(() => {
+                this.pendingCommands.delete(requestId);
+                reject(new Error(`Command timeout: ${command} did not respond within ${timeoutMs}ms`));
+            }, timeoutMs);
+
+            this.pendingCommands.set(requestId, { resolve, reject, timeout });
+
+            this.ws.send(JSON.stringify({
+                type: 'command',
+                requestId,
+                command: { command, arguments: args, options }
+            }));
+        });
+    }
+
     disconnect() {
+        this.pendingCommands.forEach(({ timeout, reject }) => {
+            clearTimeout(timeout);
+            reject(new Error('Connection closed while command was pending'));
+        });
+        this.pendingCommands.clear();
+
         if (this.ws) {
             this.ws.close();
             this.connectionPromise = null;

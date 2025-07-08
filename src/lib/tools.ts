@@ -179,187 +179,154 @@ export const is_process_running = (processId: string) => {
     return Promise.resolve(`Process ${processId} is ${runningProcesses[processId] ? 'running' : 'not running'}`);
 }
 
-export const open_file_vscode = (filePath: string, options: any) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            client.sendCommand('openFile', [filePath], options);
-            client.onCommandResponse((response: CommandResponse) => {
-                const message = handleCommandResponse(response);
-                resolve(message);
-            });
-        } catch (error) {
-            reject(new Error(`Failed to open file: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const open_file_vscode = async (filePath: string, options: any) => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        
+        const response = await client.sendCommandWithPromise('openFile', [filePath], options);
+        return handleCommandResponse(response);
+    } catch (error) {
+        throw new Error(`Failed to open file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const write_file_vscode = (filePath: string, content: string) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            client.sendCommand('writeFile', [filePath, content]);
-            client.onCommandResponse((response: CommandResponse) => {
-                const message = handleCommandResponse(response);
-                resolve(message);
-            });
-        } catch (error) {
-            reject(new Error(`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const write_file_vscode = async (filePath: string, content: string) => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        
+        const response = await client.sendCommandWithPromise('writeFile', [filePath, content]);
+        return handleCommandResponse(response);
+    } catch (error) {
+        throw new Error(`Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const delete_file = (filePath: string) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            client.sendCommand('deleteFile', [filePath]);
-            client.onCommandResponse((response: CommandResponse) => {
-                const message = handleCommandResponse(response);
-                resolve(message);
-            });
-        } catch (error) {
-            reject(new Error(`Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const delete_file = async (filePath: string) => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        
+        const response = await client.sendCommandWithPromise('deleteFile', [filePath]);
+        return handleCommandResponse(response);
+    } catch (error) {
+        throw new Error(`Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const select_text = (startLine: number, startChar: number, endLine: number, endChar: number) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            client.sendCommand('selectText', [startLine, startChar, endLine, endChar]);
-            client.onCommandResponse((response: CommandResponse) => {
-                const message = handleCommandResponse(response);
-                resolve(message);
-            });
-        } catch (error) {
-            reject(new Error(`Failed to select text: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const select_text = async (startLine: number, startChar: number, endLine: number, endChar: number) => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        
+        const response = await client.sendCommandWithPromise('selectText', [startLine, startChar, endLine, endChar]);
+        return handleCommandResponse(response);
+    } catch (error) {
+        throw new Error(`Failed to select text: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const show_notification = (message: string, type: 'info' | 'warning' | 'error' = 'info') => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            client.sendCommand('showNotification', [message, type]);
-            client.onCommandResponse((response: CommandResponse) => {
-                const message = handleCommandResponse(response);
-                resolve(message);
-            });
-        } catch (error) {
-            reject(new Error(`Failed to show notification: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const show_notification = async (message: string, type: 'info' | 'warning' | 'error' = 'info') => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        
+        const response = await client.sendCommandWithPromise('showNotification', [message, type]);
+        return handleCommandResponse(response);
+    } catch (error) {
+        throw new Error(`Failed to show notification: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const propose_change_vscode = (changeProposal: ChangeProposalRequest) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            client.sendCommand('proposeChange', [changeProposal]);
-            client.onCommandResponse((response: CommandResponse) => {
-                const message = handleCommandResponse(response);
-                resolve(message);
-            });
-        } catch (error) {
-            reject(new Error(`Failed to propose change: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const propose_change_vscode = async (changeProposal: ChangeProposalRequest) => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        
+        const response = await client.sendCommandWithPromise('proposeChange', [changeProposal]);
+        return handleCommandResponse(response);
+    } catch (error) {
+        throw new Error(`Failed to propose change: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const get_active_file = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            const activeFile: ActiveFileInfo | null = client.getContext().activeFile;
-            resolve(activeFile);
-        } catch (error) {
-            reject(new Error(`Failed to get active file: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const get_active_file = async () => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        const activeFile: ActiveFileInfo | null = client.getContext().activeFile;
+        return activeFile;
+    } catch (error) {
+        throw new Error(`Failed to get active file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const get_open_tabs = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            const openTabs: OpenTabInfo[] | [] = client.getContext().openTabs;
-            resolve(openTabs);
-        } catch (error) {
-            reject(new Error(`Failed to get active tab: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const get_open_tabs = async () => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        const openTabs: OpenTabInfo[] | [] = client.getContext().openTabs;
+        return openTabs;
+    } catch (error) {
+        throw new Error(`Failed to get open tabs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const get_text_selection = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            const textSelection: TextSelectionInfo | null = client.getContext().textSelection;
-            resolve(textSelection);
-        } catch (error) {
-            reject(new Error(`Failed to get text selection: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const get_text_selection = async () => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        const textSelection: TextSelectionInfo | null = client.getContext().textSelection;
+        return textSelection;
+    } catch (error) {
+        throw new Error(`Failed to get text selection: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const get_diffs = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            const diffs: DiffInfo[] | null = client.getContext().diffs;
-            resolve(diffs);
-        } catch (error) {
-            reject(new Error(`Failed to get diffs: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const get_diffs = async () => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        const diffs: DiffInfo[] | null = client.getContext().diffs;
+        return diffs;
+    } catch (error) {
+        throw new Error(`Failed to get diffs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
-export const get_diagnostics = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            const client = getClient();
-            if (!client.canOperate()) {
-                reject(new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.'));
-                return;
-            }
-            const allDiagnostics: DiagnosticInfo[] | null = client.getContext().diagnostics;
-            const diagnostics = allDiagnostics?.filter((d: DiagnosticInfo) => d.diagnostics.length > 0);
-            resolve(diagnostics);
-        } catch (error) {
-            reject(new Error(`Failed to get diagnostics: ${error instanceof Error ? error.message : 'Unknown error'}`));
+export const get_diagnostics = async () => {
+    try {
+        const client = getClient();
+        if (!client.canOperate()) {
+            throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-    });
+        const allDiagnostics: DiagnosticInfo[] | null = client.getContext().diagnostics;
+        const diagnostics = allDiagnostics?.filter((d: DiagnosticInfo) => d.diagnostics.length > 0);
+        return diagnostics;
+    } catch (error) {
+        throw new Error(`Failed to get diagnostics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 }
 
 export const handleCommandResponse = (response: CommandResponse): Message => {
