@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'gemini',
-        model: 'gemini-2.5-pro',
+        provider: 'openai',
+        model: 'gpt-4o-mini',
     });
 
     useInput((input, key) => {
@@ -330,6 +330,7 @@ export function Agent() {
                 onSend={handleNewMsgSend}
                 commands={systemCmds}
                 isProcessing={isProcessing}
+                isDisabled={!!activeCommand || !!pendingToolCall}
                 currentToolCall={currentToolCall}
             />
             {activeCommand && (

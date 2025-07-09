@@ -11,10 +11,11 @@ interface ChatInputProps {
 	onSend: (message: string, files: SelectedFile[]) => void;
 	commands: Command[];
 	isProcessing?: boolean;
+	isDisabled?: boolean;
 	currentToolCall?: FunctionCall | null;
 }
 
-export const ChatInput = ({ onSend, commands, isProcessing, currentToolCall }: ChatInputProps) => {
+export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentToolCall }: ChatInputProps) => {
 	const {
 		input,
 		showFileSelector,
@@ -24,7 +25,7 @@ export const ChatInput = ({ onSend, commands, isProcessing, currentToolCall }: C
 		suggestions,
 		handleFileSelect,
 		handleFileCancel,
-	} = useChatInput({ onSend, commands, isDisabled: isProcessing });
+	} = useChatInput({ onSend, commands, isDisabled: isProcessing || isDisabled });
 
 	return (
 		<Box flexDirection="column">

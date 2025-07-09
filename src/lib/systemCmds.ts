@@ -38,6 +38,12 @@ export const systemCmds: Command[] = [{
         required: true
     }],
 },{
+    name: "settings",
+    description: "edit configuration file",
+    category: "system",
+    args: [],
+    options: [],
+},{
     name: "exit",
     description: "exit the app",
     category: "system",
