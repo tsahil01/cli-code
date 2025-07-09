@@ -115,6 +115,7 @@ export interface ConfigFormat {
     refreshToken?: string;
     user?: UserData;
     acceptAllToolCalls?: boolean;
+    plan: Plan;
 }
 
 
@@ -228,6 +229,7 @@ export interface ChatRequest {
     model: string;
     temperature?: number;
     max_tokens?: number;
+    plan: Plan;
 }
 
 export interface ModelData {
@@ -241,4 +243,9 @@ export interface ToolCallStatus {
     status: 'pending' | 'success' | 'error';
     timestamp: number;
     errorMessage?: string;
+}
+
+export interface Plan {
+    mode: 'lite' | 'full';
+    addOns: ('memory' | 'github' | 'advanced-context')[]; // Only available for 'lite' mode
 }
