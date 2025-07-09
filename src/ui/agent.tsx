@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'openai',
-        model: 'gpt-4o-mini',
+        provider: 'gemini',
+        model: 'gemini-2.5-pro',
     });
     const [plan, setPlan] = useState<Plan>({ mode: 'lite', addOns: [] });
     const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
@@ -255,7 +255,7 @@ export function Agent() {
             if (command) {
                 if (command.name === 'exit') {
                     process.exit(0);
-                } else if (command.name === 'plan') {
+                } else if (command.name === 'mode') {
                     setShowPlanDialog(true);
                 } else {
                     setActiveCommand(command);

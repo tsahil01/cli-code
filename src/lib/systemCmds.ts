@@ -38,11 +38,18 @@ export const systemCmds: Command[] = [{
         required: true
     }],
 },{
-    name: "plan",
-    description: "change subscription plan",
+    name: "mode",
+    description: "change usage mode (lite or full)",
     category: "system",
     args: [],
-    options: [],
+    options: [{
+        name: "mode",
+        description: "Select usage mode",
+        type: "select",
+        choices: ["lite", "full"],
+        default: "lite",
+        required: true
+    }],
 },{
     name: "settings",
     description: "edit configuration file",
