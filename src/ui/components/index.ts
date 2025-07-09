@@ -1,8 +1,10 @@
 export { Header } from './header.js';
-export { ChatInput } from './chat-input.js';
 export { CommandModal } from './command-modal.js';
+export { ChatInput } from './chat-input.js';
 export { CommandSuggestions } from './command-suggestions.js';
+export { ToolStatusDisplay } from './tool-status-display.js';
 export { ConnectionFailureDialog } from './connection-failure-dialog.js';
+export { SettingsEditor } from './settings-editor.js';
 export { FileSelector } from './file-selector.js';
 export { Initialization } from './initlization.js';
 export { InputDisplay } from './input-display.js';
@@ -11,5 +13,4 @@ export { MarkdownRenderer } from './markdown-renderer.js';
 export { MessageDisplay } from './message-display.js';
 export { AttachedFiles } from './attached-files.js';
 export { ToolConfirmationDialog } from './tool-confirmation-dialog.js';
-export { useChatInput } from './use-chat-input.js';
-export { ToolStatusDisplay } from "./tool-status-display.js"; 
+export { useChatInput } from './use-chat-input.js'; 

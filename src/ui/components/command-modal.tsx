@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Command, CommandOption } from '../../types';
+import { SettingsEditor } from './settings-editor.js';
 
 interface CommandModalProps {
     command: Command;
@@ -15,14 +16,18 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
     const [optionValues, setOptionValues] = useState<OptionState>({});
     const [isConfirming, setIsConfirming] = useState(false);
+    const [showSettingsEditor, setShowSettingsEditor] = useState(false);
 
-    const handleCommandExecute = (command: Command, options: Record<string, any>) => {
+    const handleCommandExecute = async (command: Command, options: Record<string, any>) => {
         switch (command.name) {
             case 'model':
                 break;
             case 'sessions':
                 break;
             case 'new':
+                break;
+            case 'settings':
+                setShowSettingsEditor(true);
                 break;
         }
     };
@@ -31,6 +36,11 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
     const currentOption = selectableOptions[selectedOptionIndex];
 
     useInput((input, key) => {
+        if (showSettingsEditor) {
+            // Settings editor handles its own input
+            return;
+        }
+
         if (key.escape) {
             if (isConfirming) {
                 setIsConfirming(false);
@@ -63,16 +73,29 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
 
         if (key.return) {
             if (isConfirming) {
-                handleCommandExecute?.(command, optionValues);
+                handleCommandExecute(command, optionValues);
                 onClose();
             } else if (command.name === 'new') {
                 setIsConfirming(true);
+            } else if (command.name === 'settings') {
+                handleCommandExecute(command, optionValues);
             } else if (handleCommandExecute) {
                 handleCommandExecute(command, optionValues);
                 onClose();
             }
         }
     });
+
+    if (showSettingsEditor) {
+        return (
+            <SettingsEditor 
+                onClose={() => {
+                    setShowSettingsEditor(false);
+                    onClose();
+                }} 
+            />
+        );
+    }
 
     const renderOption = (option: CommandOption) => {
         if (option.type === 'select' && option.choices) {
@@ -106,6 +129,7 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
                         <Text>/sessions - Manage sessions</Text>
                         <Text>/new - New session</Text>
                         <Text>/model - Switch model</Text>
+                        <Text>/settings - Edit configuration file</Text>
                         <Text>/exit - Exit app</Text>
                     </Box>
                 );
@@ -123,6 +147,15 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
                     <Box flexDirection="column">
                         {command.options.map(renderOption)}
                         <Text dimColor>↑↓ select • enter confirm</Text>
+                    </Box>
+                );
+
+            case 'settings':
+                return (
+                    <Box flexDirection="column">
+                        <Text color="cyan">Open JSON Configuration Editor</Text>
+                        <Text color="gray">Edit your configuration file directly as JSON</Text>
+                        <Text dimColor>enter open editor • esc cancel</Text>
                     </Box>
                 );
 
