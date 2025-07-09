@@ -38,6 +38,12 @@ export const systemCmds: Command[] = [{
         required: true
     }],
 },{
+    name: "plan",
+    description: "change subscription plan",
+    category: "system",
+    args: [],
+    options: [],
+},{
     name: "settings",
     description: "edit configuration file",
     category: "system",
