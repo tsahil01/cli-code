@@ -22,6 +22,10 @@ async function writeConfigFile(config: Config) {
 async function appendConfigFile(newData: Config) {
     const existingConfig = await readConfigFile();
     const mergedConfig = { ...existingConfig, ...newData };
+    if (!mergedConfig.plan) {
+        mergedConfig.plan = { mode: 'lite', addOns: [] };
+    }
+    
     await writeConfigFile(mergedConfig);
 }
 
@@ -31,14 +35,19 @@ async function readConfigFile(): Promise<ConfigFormat> {
     try {
         if (!fs.existsSync(configPath)) {
             await createConfigFile();
-            return {};
+            return { plan: { mode: 'lite', addOns: [] } };
         }
         
         const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+        
+        if (!config.plan) {
+            config.plan = { mode: 'lite', addOns: [] };
+        }
+        
         return config;
     } catch (error) {
         console.error("Error reading config file:", error);
-        return {};
+        return { plan: { mode: 'lite', addOns: [] } };
     }
 }
 

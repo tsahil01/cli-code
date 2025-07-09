@@ -41,6 +41,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
             model: data.model,
             temperature: data.temperature,
             max_tokens: data.max_tokens,
+            plan: data.plan,
         }
         const response = await fetch(`${WORKER_URL}/test/chat/stream`, {
             method: "POST",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Header, ChatInput, ToolStatusDisplay } from "./components/index.js";
-import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus } from "../types.js";
+import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog } from "./components/index.js";
+import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
 import { ToolConfirmationDialog } from './components/tool-confirmation-dialog.js';
@@ -23,10 +23,33 @@ export function Agent() {
         provider: 'openai',
         model: 'gpt-4o-mini',
     });
+    const [plan, setPlan] = useState<Plan>({ mode: 'lite', addOns: [] });
+    const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
+
+    useEffect(() => {
+        const loadPlan = async () => {
+            try {
+                const config = await readConfigFile();
+                if (config.plan) {
+                    setPlan(config.plan);
+                } else {
+                    const defaultPlan: Plan = { mode: 'lite', addOns: [] };
+                    setPlan(defaultPlan);
+                    await appendConfigFile({ plan: defaultPlan });
+                }
+            } catch (error) {
+                console.error('Error loading plan:', error);
+            }
+        };
+        
+        loadPlan();
+    }, []);
 
     useInput((input, key) => {
         if (key.escape && activeCommand) {
             setActiveCommand(null);
+        } else if (key.escape && showPlanDialog) {
+            setShowPlanDialog(false);
         }
     });
 
@@ -232,6 +255,8 @@ export function Agent() {
             if (command) {
                 if (command.name === 'exit') {
                     process.exit(0);
+                } else if (command.name === 'plan') {
+                    setShowPlanDialog(true);
                 } else {
                     setActiveCommand(command);
                 }
@@ -256,7 +281,8 @@ export function Agent() {
                         messages: updatedMessages,
                         provider: modelData?.provider,
                         model: modelData?.model,
-                        base_url: "https://openrouter.ai/api/v1"
+                        base_url: "https://openrouter.ai/api/v1",
+                        plan: plan // Include plan in chat request
                     };
 
                     await handleChatEndpoint(chatRequest);
@@ -289,7 +315,8 @@ export function Agent() {
                 messages: msgs,
                 provider: modelData?.provider,
                 model: modelData?.model,
-                base_url: "https://openrouter.ai/api/v1"
+                base_url: "https://openrouter.ai/api/v1",
+                plan: plan // Include plan in chat request
             };
 
             await handleChatEndpoint(chatRequest);
@@ -326,17 +353,29 @@ export function Agent() {
                 />
             )}
             <ToolStatusDisplay toolCalls={toolCallHistory} />
+            <PlanDisplay plan={plan} />
             <ChatInput
                 onSend={handleNewMsgSend}
                 commands={systemCmds}
                 isProcessing={isProcessing}
-                isDisabled={!!activeCommand || !!pendingToolCall}
+                isDisabled={!!activeCommand || !!pendingToolCall || showPlanDialog}
                 currentToolCall={currentToolCall}
             />
             {activeCommand && (
                 <CommandModal
                     command={activeCommand}
                     onClose={() => setActiveCommand(null)}
+                />
+            )}
+            {showPlanDialog && (
+                <PlanDialog
+                    currentPlan={plan}
+                    onSave={(newPlan) => {
+                        setPlan(newPlan);
+                        appendConfigFile({ plan: newPlan });
+                        setShowPlanDialog(false);
+                    }}
+                    onCancel={() => setShowPlanDialog(false)}
                 />
             )}
         </>
