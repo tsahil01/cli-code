@@ -12,7 +12,7 @@ export function PlanDisplay({ plan }: PlanDisplayProps) {
         : '';
     
     return (
-        <Box justifyContent="flex-end" marginRight={2}>
+        <Box justifyContent="flex-end">
             <Text color="green">
                 Plan: {plan.mode.charAt(0).toUpperCase() + plan.mode.slice(1)}{addOnsText}
             </Text>

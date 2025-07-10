@@ -43,21 +43,21 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
             max_tokens: data.max_tokens,
             plan: data.plan,
         }
-        const response = await fetch(`${WORKER_URL}/test/chat/stream`, {
+        const response = await fetch(`${WORKER_URL}/chat/stream`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${accessToken}`,
             },
-            body: JSON.stringify({chat: requestBody}),
+            body: JSON.stringify({ chat: requestBody }),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            
+
             // Handle different error types
             let chatError: ChatError;
-            
+
             if (response.status === 429) {
                 chatError = {
                     type: 'rate_limit',
@@ -89,12 +89,12 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                     details: errorData
                 };
             }
-            
+
             // Call doneCallback with error information
             doneCallback({
                 error: chatError
             });
-            
+
             throw new Error(chatError.message);
         }
 
@@ -121,7 +121,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         while (true) {
             const result = await reader.read();
             if (result.done) break;
-            
+
             const chunk = decoder.decode(result.value);
             const lines = chunk.split('\n').filter(line => line.trim());
 
@@ -148,14 +148,21 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                             break;
 
                         case 'final':
+                            console.log('final', JSON.stringify(event, null, 2));
                             const metadata: MessageMetadata = {
                                 thinkingContent: event.summary?.thinking || '',
-                                toolCalls: event.summary?.toolCalls || [],
+                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || "",
+                                toolCalls: event.fullMessage?.content?.filter((c: any) => c.type === 'tool_use') || [],
                                 finishReason: event.finishReason,
                                 usageMetadata: event.usageMetadata
                             };
 
-                            const finalContent = extractResponse(accumulatedContent);
+                            const textContent = event.fullMessage?.content
+                                ?.filter((c: any) => c.type === 'text')
+                                ?.map((c: any) => c.text)
+                                ?.join('') || '';
+
+                            const finalContent = textContent || extractResponse(accumulatedContent);
                             finalCallback(finalContent, metadata);
                             break;
 
@@ -181,9 +188,9 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         }
     } catch (error) {
         console.error("Error chatting:", error);
-        
+
         let chatError: ChatError;
-        
+
         if (error instanceof TypeError && error.message.includes('fetch')) {
             chatError = {
                 type: 'network_error',
@@ -197,12 +204,12 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                 details: error
             };
         }
-        
+
         // Call doneCallback with error information
         doneCallback({
             error: chatError
         });
-        
+
         throw new Error(chatError.message);
     }
 }

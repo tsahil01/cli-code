@@ -39,6 +39,7 @@ export type FunctionCall = AnthropicFunctionCall | GeminiFunctionCall | OpenAIFu
 
 export interface MessageMetadata {
     thinkingContent?: string;
+    thinkingSignature?: string;
     toolCalls?: FunctionCall[];
     finishReason?: string;
     usageMetadata?: any;

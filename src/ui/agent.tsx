@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'openai',
-        model: 'gpt-4o-mini',
+        provider: 'anthropic',
+        model: 'claude-3-5-haiku-20241022',
     });
     const [plan, setPlan] = useState<Plan>({ mode: 'lite', addOns: [] });
     const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
@@ -41,7 +41,7 @@ export function Agent() {
                 console.error('Error loading plan:', error);
             }
         };
-        
+
         loadPlan();
     }, []);
 
@@ -54,19 +54,19 @@ export function Agent() {
     });
 
     const generateToolCallId = (toolCall: FunctionCall) => {
-        const toolName = (toolCall as AnthropicFunctionCall).name || 
-                        (toolCall as GeminiFunctionCall).functionCall?.name || 
-                        (toolCall as any).function?.name || 
-                        'unknown_tool';
-        
+        const toolName = (toolCall as AnthropicFunctionCall).name ||
+            (toolCall as GeminiFunctionCall).functionCall?.name ||
+            (toolCall as any).function?.name ||
+            'unknown_tool';
+
         const existingId = (toolCall as any).id;
         if (existingId) return existingId;
-        
-        const args = (toolCall as AnthropicFunctionCall).input || 
-                    (toolCall as GeminiFunctionCall).functionCall?.args || 
-                    (toolCall as any).function?.arguments || {};
+
+        const args = (toolCall as AnthropicFunctionCall).input ||
+            (toolCall as GeminiFunctionCall).functionCall?.args ||
+            (toolCall as any).function?.arguments || {};
         const argsString = JSON.stringify(args);
-        
+
         const hashString = `${toolName}_${argsString}`;
         let hash = 0;
         for (let i = 0; i < hashString.length; i++) {
@@ -78,17 +78,17 @@ export function Agent() {
     };
 
     const addToolCallStatus = (toolCall: FunctionCall, status: 'pending' | 'success' | 'error', errorMessage?: string) => {
-        const toolName = (toolCall as AnthropicFunctionCall).name || 
-                        (toolCall as GeminiFunctionCall).functionCall?.name || 
-                        (toolCall as any).function?.name || 
-                        'unknown_tool';
-        
+        const toolName = (toolCall as AnthropicFunctionCall).name ||
+            (toolCall as GeminiFunctionCall).functionCall?.name ||
+            (toolCall as any).function?.name ||
+            'unknown_tool';
+
         const toolCallId = generateToolCallId(toolCall);
-        
+
         setToolCallHistory(prev => {
             const updated = [...prev];
             const existingIndex = updated.findIndex(tc => tc.id === toolCallId);
-            
+
             if (existingIndex >= 0) {
                 updated[existingIndex] = {
                     ...updated[existingIndex],
@@ -125,6 +125,7 @@ export function Agent() {
                     role: 'assistant',
                     metadata: {
                         thinkingContent: metadata.thinkingContent,
+                        thinkingSignature: metadata.thinkingSignature,
                         toolCalls: metadata.toolCalls || []
                     }
                 }]);
@@ -135,7 +136,7 @@ export function Agent() {
             },
             () => {
                 setIsProcessing(false);
-                setThinking('');
+                // setThinking('');
                 setContent('');
                 setCurrentToolCall(null);
             }
@@ -151,15 +152,18 @@ export function Agent() {
                 addToolCallStatus(toolCall, 'pending');
                 const result = await runTool(toolCall);
                 addToolCallStatus(toolCall, 'success');
-                
-                const content = (result && typeof result === 'object' && 'content' in result) 
-                    ? result.content 
+
+                const content = (result && typeof result === 'object' && 'content' in result)
+                    ? result.content
                     : JSON.stringify(result, null, 2);
-                
+
                 let newMsg: Message = {
                     content: content,
                     role: 'user',
-                    ignoreInDisplay: false
+                    ignoreInDisplay: false,
+                    metadata: {
+                        toolCalls: [toolCall]
+                    }
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, newMsg];
@@ -196,15 +200,18 @@ export function Agent() {
                 addToolCallStatus(pendingToolCall, 'pending');
                 const result = await runTool(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'success');
-                
-                const content = (result && typeof result === 'object' && 'content' in result) 
-                    ? result.content 
+
+                const content = (result && typeof result === 'object' && 'content' in result)
+                    ? result.content
                     : JSON.stringify(result, null, 2);
-                
+
                 let newMsg: Message = {
                     content: content,
                     role: 'user',
-                    ignoreInDisplay: true
+                    ignoreInDisplay: true,
+                    metadata: {
+                        toolCalls: [pendingToolCall]
+                    }
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, newMsg];
@@ -216,7 +223,11 @@ export function Agent() {
                 addToolCallStatus(pendingToolCall, 'error', errorMessage);
                 const errorMsg: Message = {
                     content: `Tool execution failed: ${errorMessage}`,
-                    role: 'user'
+                    role: 'user',
+                    ignoreInDisplay: true,
+                    metadata: {
+                        toolCalls: [pendingToolCall]
+                    }
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, errorMsg];
@@ -255,7 +266,7 @@ export function Agent() {
             if (command) {
                 if (command.name === 'exit') {
                     process.exit(0);
-                } else if (command.name === 'plan') {
+                } else if (command.name === 'mode') {
                     setShowPlanDialog(true);
                 } else {
                     setActiveCommand(command);
@@ -274,7 +285,7 @@ export function Agent() {
 
         setMessages(prev => {
             const updatedMessages = [...prev, { content: userMessage, role: 'user' as const }];
-            
+
             setTimeout(async () => {
                 try {
                     const chatRequest: ChatRequest = {
@@ -300,7 +311,7 @@ export function Agent() {
                     setCurrentToolCall(null);
                 }
             }, 0);
-            
+
             return updatedMessages;
         });
     }
@@ -316,7 +327,7 @@ export function Agent() {
                 provider: modelData?.provider,
                 model: modelData?.model,
                 base_url: "https://openrouter.ai/api/v1",
-                plan: plan // Include plan in chat request
+                plan: plan
             };
 
             await handleChatEndpoint(chatRequest);
