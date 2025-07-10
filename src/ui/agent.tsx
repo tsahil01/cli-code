@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'anthropic',
-        model: 'claude-3-5-haiku-20241022',
+        provider: 'gemini',
+        model: 'gemini-2.5-pro',
     });
     const [plan, setPlan] = useState<Plan>({ mode: 'lite', addOns: [] });
     const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
@@ -55,7 +55,7 @@ export function Agent() {
 
     const generateToolCallId = (toolCall: FunctionCall) => {
         const toolName = (toolCall as AnthropicFunctionCall).name ||
-            (toolCall as GeminiFunctionCall).functionCall?.name ||
+            (toolCall as GeminiFunctionCall).name ||
             (toolCall as any).function?.name ||
             'unknown_tool';
 
@@ -63,7 +63,7 @@ export function Agent() {
         if (existingId) return existingId;
 
         const args = (toolCall as AnthropicFunctionCall).input ||
-            (toolCall as GeminiFunctionCall).functionCall?.args ||
+            (toolCall as GeminiFunctionCall).args ||
             (toolCall as any).function?.arguments || {};
         const argsString = JSON.stringify(args);
 
@@ -79,7 +79,7 @@ export function Agent() {
 
     const addToolCallStatus = (toolCall: FunctionCall, status: 'pending' | 'success' | 'error', errorMessage?: string) => {
         const toolName = (toolCall as AnthropicFunctionCall).name ||
-            (toolCall as GeminiFunctionCall).functionCall?.name ||
+            (toolCall as GeminiFunctionCall).name ||
             (toolCall as any).function?.name ||
             'unknown_tool';
 

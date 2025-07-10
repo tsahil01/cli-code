@@ -357,13 +357,13 @@ export const handleCommandResponse = (response: CommandResponse) => {
 }
 
 export const runTool = async (tool: FunctionCall): Promise<any> => {
-    const toolName = (tool as AnthropicFunctionCall).name || (tool as GeminiFunctionCall).functionCall?.name || (tool as OpenAIFunctionCall).function.name || null;
+    const toolName = (tool as AnthropicFunctionCall).name || (tool as GeminiFunctionCall).name || (tool as OpenAIFunctionCall).function.name || null;
 
     let toolInput: Record<string, any> = {};
     if ((tool as AnthropicFunctionCall).input) {
         toolInput = (tool as AnthropicFunctionCall).input || {};
-    } else if ((tool as GeminiFunctionCall).functionCall?.args) {
-        toolInput = (tool as GeminiFunctionCall).functionCall.args || {};
+    } else if ((tool as GeminiFunctionCall).args) {
+        toolInput = (tool as GeminiFunctionCall).args || {};
     } else if ((tool as OpenAIFunctionCall).function?.arguments) {
         const args = (tool as OpenAIFunctionCall).function.arguments;
         toolInput = args ? (typeof args === 'string' ? JSON.parse(args) : args) : {};

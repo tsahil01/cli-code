@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import { get_active_file, get_text_selection } from "../../lib/tools.js";
-import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall } from "../../types.js";
+import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunctionCall } from "../../types.js";
 
 interface InputDisplayProps {
 	input: string;
@@ -45,9 +45,7 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall }: InputDisp
 	}, []);
 
 	const getToolName = (toolCall: FunctionCall) => {
-		return 'functionCall' in toolCall 
-			? toolCall.functionCall.name 
-			: (toolCall as AnthropicFunctionCall).name;
+		return (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function.name || null;
 	};
 
 	return (
