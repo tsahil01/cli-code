@@ -50,7 +50,7 @@ export const MessageDisplay = ({
                         marginBottom={isLastInGroup ? 1 : 0}
                     >
                         <Text color={message.role === 'user' ? "cyan" : "magenta"}>
-                            ┃
+                            {message.role === 'user' ? 'User: ' : 'Assistant: '}
                         </Text>
 
                         <Box
