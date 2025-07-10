@@ -185,7 +185,7 @@ export const open_file_vscode = async (filePath: string, options: any) => {
         if (!client.canOperate()) {
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-        
+
         const response = await client.sendCommandWithPromise('openFile', [filePath], options);
         return handleCommandResponse(response);
     } catch (error) {
@@ -199,7 +199,7 @@ export const write_file_vscode = async (filePath: string, content: string) => {
         if (!client.canOperate()) {
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-        
+
         const response = await client.sendCommandWithPromise('writeFile', [filePath, content]);
         return handleCommandResponse(response);
     } catch (error) {
@@ -213,7 +213,7 @@ export const delete_file = async (filePath: string) => {
         if (!client.canOperate()) {
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-        
+
         const response = await client.sendCommandWithPromise('deleteFile', [filePath]);
         return handleCommandResponse(response);
     } catch (error) {
@@ -227,7 +227,7 @@ export const select_text = async (startLine: number, startChar: number, endLine:
         if (!client.canOperate()) {
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-        
+
         const response = await client.sendCommandWithPromise('selectText', [startLine, startChar, endLine, endChar]);
         return handleCommandResponse(response);
     } catch (error) {
@@ -241,7 +241,7 @@ export const show_notification = async (message: string, type: 'info' | 'warning
         if (!client.canOperate()) {
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-        
+
         const response = await client.sendCommandWithPromise('showNotification', [message, type]);
         return handleCommandResponse(response);
     } catch (error) {
@@ -255,7 +255,7 @@ export const propose_change_vscode = async (changeProposal: ChangeProposalReques
         if (!client.canOperate()) {
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
-        
+
         // Use 60 seconds timeout for user interaction tools
         const response = await client.sendCommandWithPromise('proposeChange', [changeProposal], {}, 60000);
         return handleCommandResponse(response);
@@ -330,10 +330,10 @@ export const get_diagnostics = async () => {
     }
 }
 
-export const handleCommandResponse = (response: CommandResponse): Message => {
+export const handleCommandResponse = (response: CommandResponse) => {
     let content = '';
     const data = response.data;
-    
+
     if (data.data && data.data.message && data.data.message.includes('Change proposal')) {
         if (data.data.accepted) {
             content = `Change proposal accepted and applied successfully!`;
@@ -352,17 +352,13 @@ export const handleCommandResponse = (response: CommandResponse): Message => {
     } else {
         content = `Error: ${data.error || 'Unknown error occurred'}`;
     }
-    
-    return {
-        content: content,
-        role: 'user',
-        ignoreInDisplay: true,
-    }
+
+    return content.trim();
 }
 
 export const runTool = async (tool: FunctionCall): Promise<any> => {
     const toolName = (tool as AnthropicFunctionCall).name || (tool as GeminiFunctionCall).functionCall?.name || (tool as OpenAIFunctionCall).function.name || null;
-    
+
     let toolInput: Record<string, any> = {};
     if ((tool as AnthropicFunctionCall).input) {
         toolInput = (tool as AnthropicFunctionCall).input || {};
@@ -373,6 +369,8 @@ export const runTool = async (tool: FunctionCall): Promise<any> => {
         toolInput = args ? (typeof args === 'string' ? JSON.parse(args) : args) : {};
     }
 
+    console.log('toolInput', JSON.stringify(toolInput, null, 2));
+
     if (!toolName) {
         throw new Error('Tool name not found in function call');
     }
@@ -381,70 +379,70 @@ export const runTool = async (tool: FunctionCall): Promise<any> => {
         switch (toolName) {
             case 'run_command':
                 return await run_command(toolInput.command || toolInput.cmd);
-            
+
             case 'check_current_directory':
                 return await check_current_directory();
-            
+
             case 'list_files':
                 return await list_files(toolInput.filePath || toolInput.path || toolInput.directory);
-            
+
             case 'read_file':
                 return await read_file(toolInput.filePath || toolInput.path || toolInput.file);
-            
+
             case 'write_file':
                 return await write_file(toolInput.filePath || toolInput.path || toolInput.file, toolInput.content);
-            
+
             case 'open_file':
                 return await open_file(toolInput.filePath || toolInput.path || toolInput.file);
-            
+
             case 'open_browser':
                 return await open_browser(toolInput.url);
-            
+
             case 'run_background_command':
                 return await run_background_command(toolInput.command || toolInput.cmd, toolInput.processId || toolInput.id);
-            
+
             case 'stop_process':
                 return await stop_process(toolInput.processId || toolInput.id);
-            
+
             case 'grep_search':
                 return await grep_search(toolInput.searchTerm || toolInput.term || toolInput.search, toolInput.filePath || toolInput.path || toolInput.directory);
-            
+
             case 'is_process_running':
                 return await is_process_running(toolInput.processId || toolInput.id);
-            
+
             case 'open_file_vscode':
                 return await open_file_vscode(toolInput.filePath || toolInput.path || toolInput.file, toolInput.options);
-            
+
             case 'write_file_vscode':
                 return await write_file_vscode(toolInput.filePath || toolInput.path || toolInput.file, toolInput.content);
-            
+
             case 'delete_file':
                 return await delete_file(toolInput.filePath || toolInput.path || toolInput.file);
-            
+
             case 'select_text':
                 return await select_text(toolInput.startLine, toolInput.startChar, toolInput.endLine, toolInput.endChar);
-            
+
             case 'show_notification':
                 return await show_notification(toolInput.message, toolInput.type);
-            
+
             case 'propose_change_vscode':
                 return await propose_change_vscode(toolInput as ChangeProposalRequest);
-            
+
             case 'get_active_file':
                 return await get_active_file();
-            
+
             case 'get_open_tabs':
                 return await get_open_tabs();
-            
+
             case 'get_text_selection':
                 return await get_text_selection();
-            
+
             case 'get_diffs':
                 return await get_diffs();
-            
+
             case 'get_diagnostics':
                 return await get_diagnostics();
-            
+
             default:
                 throw new Error(`Unknown tool: ${toolName}`);
         }

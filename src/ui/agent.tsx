@@ -153,9 +153,7 @@ export function Agent() {
                 const result = await runTool(toolCall);
                 addToolCallStatus(toolCall, 'success');
 
-                const content = (result && typeof result === 'object' && 'content' in result)
-                    ? result.content
-                    : JSON.stringify(result, null, 2);
+                const content = JSON.stringify(result, null, 2);
 
                 let newMsg: Message = {
                     content: content,
@@ -201,9 +199,7 @@ export function Agent() {
                 const result = await runTool(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'success');
 
-                const content = (result && typeof result === 'object' && 'content' in result)
-                    ? result.content
-                    : JSON.stringify(result, null, 2);
+                const content = JSON.stringify(result, null, 2);
 
                 let newMsg: Message = {
                     content: content,

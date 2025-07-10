@@ -143,16 +143,17 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
 
                         case 'tool_call':
                             const toolCall = event.toolCall as FunctionCall;
+                            // console.log(toolCall);
                             currentToolCalls.push(toolCall);
                             toolCallCallback(currentToolCalls);
                             break;
 
                         case 'final':
-                            console.log('final', JSON.stringify(event, null, 2));
+                            // console.log('final', JSON.stringify(event, null, 2));
                             const metadata: MessageMetadata = {
                                 thinkingContent: event.summary?.thinking || '',
-                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || "",
-                                toolCalls: event.fullMessage?.content?.filter((c: any) => c.type === 'tool_use') || [],
+                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || event.summary?.toolCalls[0]?.thoughtSignature || event.summary?.content[0]?.signature || "",
+                                toolCalls: event.fullMessage?.content?.filter((c: any) => c.type === 'tool_use') || event.summary?.toolCalls?.map((c: any) => c.functionCall) || [],
                                 finishReason: event.finishReason,
                                 usageMetadata: event.usageMetadata
                             };
