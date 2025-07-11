@@ -19,10 +19,8 @@ export interface GeminiFunctionCall {
     type?: 'tool_use';
     id?: string;
     thoughtSignature?: string;
-    functionCall: {
-        name: string;
-        args?: Record<string, any>;
-    };
+    name: string;
+    args?: Record<string, any>;
 }
 
 export interface OpenAIFunctionCall {
@@ -55,14 +53,14 @@ export type ToolInput = {
 }
 
 export interface FileItem {
-	name: string;
-	isDirectory: boolean;
-	path: string;
+    name: string;
+    isDirectory: boolean;
+    path: string;
 }
 
 export interface SelectedFile {
-	path: string;
-	content: string;
+    path: string;
+    content: string;
 }
 
 export interface CommandOption {
@@ -92,7 +90,7 @@ export interface Command {
 export interface SystemCommand {
     name: string;
     description: string;
-    
+
 }
 
 export interface Subscription {

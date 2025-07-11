@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
-import { FunctionCall } from '../../types.js';
+import { AnthropicFunctionCall, FunctionCall, GeminiFunctionCall, OpenAIFunctionCall } from '../../types.js';
 
 interface ToolConfirmationDialogProps {
     toolCall: FunctionCall;
@@ -34,18 +34,13 @@ export function ToolConfirmationDialog({ toolCall, onAccept, onAcceptAll, onReje
         }
     }, { isActive: true });
 
-    const functionName = 'functionCall' in toolCall
-        ? toolCall.functionCall.name
-        : 'function' in toolCall ? toolCall.function.name
-            : 'name' in toolCall ? toolCall.name
-                : 'unknown tool';
-    const args = 'functionCall' in toolCall
-        ? toolCall.functionCall.args
-        : "input" in toolCall
-            ? toolCall.input
-            : "function" in toolCall
-                ? toolCall.function.arguments
-                : {};
+    const functionName = (toolCall as AnthropicFunctionCall).name ||
+        (toolCall as GeminiFunctionCall).name ||
+        (toolCall as OpenAIFunctionCall).function.name ||
+        'unknown tool';
+    const args = (toolCall as AnthropicFunctionCall).input ||
+        (toolCall as GeminiFunctionCall).args ||
+        (toolCall as OpenAIFunctionCall).function?.arguments || {};
 
     return (
         <Box

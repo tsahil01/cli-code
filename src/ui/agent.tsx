@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog } from "./components/index.js";
-import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan } from "../types.js";
+import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
 import { ToolConfirmationDialog } from './components/tool-confirmation-dialog.js';
@@ -20,8 +20,8 @@ export function Agent() {
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
     const [modelData, setModelData] = useState<ModelData>({
-        provider: 'anthropic',
-        model: 'claude-3-5-haiku-20241022',
+        provider: 'gemini',
+        model: 'gemini-2.5-pro',
     });
     const [plan, setPlan] = useState<Plan>({ mode: 'lite', addOns: [] });
     const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
@@ -55,7 +55,7 @@ export function Agent() {
 
     const generateToolCallId = (toolCall: FunctionCall) => {
         const toolName = (toolCall as AnthropicFunctionCall).name ||
-            (toolCall as GeminiFunctionCall).functionCall?.name ||
+            (toolCall as GeminiFunctionCall).name ||
             (toolCall as any).function?.name ||
             'unknown_tool';
 
@@ -63,7 +63,7 @@ export function Agent() {
         if (existingId) return existingId;
 
         const args = (toolCall as AnthropicFunctionCall).input ||
-            (toolCall as GeminiFunctionCall).functionCall?.args ||
+            (toolCall as GeminiFunctionCall).args ||
             (toolCall as any).function?.arguments || {};
         const argsString = JSON.stringify(args);
 
@@ -79,7 +79,7 @@ export function Agent() {
 
     const addToolCallStatus = (toolCall: FunctionCall, status: 'pending' | 'success' | 'error', errorMessage?: string) => {
         const toolName = (toolCall as AnthropicFunctionCall).name ||
-            (toolCall as GeminiFunctionCall).functionCall?.name ||
+            (toolCall as GeminiFunctionCall).name ||
             (toolCall as any).function?.name ||
             'unknown_tool';
 
@@ -131,7 +131,7 @@ export function Agent() {
                 }]);
                 if (metadata.toolCalls && metadata.toolCalls.length > 0) {
                     setCurrentToolCall(metadata.toolCalls[0]);
-                    await handleToolCall(metadata.toolCalls[0]);
+                    await handleToolCall(metadata.toolCalls[0], metadata);
                 }
             },
             () => {
@@ -143,7 +143,7 @@ export function Agent() {
         );
     }
 
-    const handleToolCall = async (toolCall: FunctionCall) => {
+    const handleToolCall = async (toolCall: FunctionCall, metadata: MessageMetadata) => {
         const config = await readConfigFile();
 
         if (config.acceptAllToolCalls) {
@@ -153,16 +153,15 @@ export function Agent() {
                 const result = await runTool(toolCall);
                 addToolCallStatus(toolCall, 'success');
 
-                const content = (result && typeof result === 'object' && 'content' in result)
-                    ? result.content
-                    : JSON.stringify(result, null, 2);
+                const content = JSON.stringify(result, null, 2);
 
                 let newMsg: Message = {
                     content: content,
                     role: 'user',
-                    ignoreInDisplay: false,
+                    ignoreInDisplay: true,
                     metadata: {
-                        toolCalls: [toolCall]
+                        toolCalls: [toolCall],
+                        thinkingSignature: metadata.thinkingSignature
                     }
                 }
                 setMessages(prev => {
@@ -176,7 +175,11 @@ export function Agent() {
                 const errorMsg: Message = {
                     content: `Tool execution failed: ${errorMessage}`,
                     role: 'user',
-                    ignoreInDisplay: false
+                    ignoreInDisplay: true,
+                    metadata: {
+                        toolCalls: [toolCall],
+                        thinkingSignature: metadata.thinkingSignature
+                    }
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, errorMsg];
@@ -201,9 +204,7 @@ export function Agent() {
                 const result = await runTool(pendingToolCall);
                 addToolCallStatus(pendingToolCall, 'success');
 
-                const content = (result && typeof result === 'object' && 'content' in result)
-                    ? result.content
-                    : JSON.stringify(result, null, 2);
+                const content = JSON.stringify(result, null, 2);
 
                 let newMsg: Message = {
                     content: content,
