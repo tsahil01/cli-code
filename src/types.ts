@@ -24,13 +24,12 @@ export interface GeminiFunctionCall {
 }
 
 export interface OpenAIFunctionCall {
-    type: 'tool_use';
+    type: 'function';
     id: string;
     function: {
         name: string;
         arguments?: Record<string, any>;
     };
-    index?: number;
 }
 
 export type FunctionCall = AnthropicFunctionCall | GeminiFunctionCall | OpenAIFunctionCall;

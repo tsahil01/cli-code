@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog } from "./components/index.js";
-import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata } from "../types.js";
+import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata, OpenAIFunctionCall } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
 import { ToolConfirmationDialog } from './components/tool-confirmation-dialog.js';
@@ -56,7 +56,7 @@ export function Agent() {
     const generateToolCallId = (toolCall: FunctionCall) => {
         const toolName = (toolCall as AnthropicFunctionCall).name ||
             (toolCall as GeminiFunctionCall).name ||
-            (toolCall as any).function?.name ||
+            (toolCall as OpenAIFunctionCall).function?.name ||
             'unknown_tool';
 
         const existingId = (toolCall as any).id;
@@ -64,7 +64,7 @@ export function Agent() {
 
         const args = (toolCall as AnthropicFunctionCall).input ||
             (toolCall as GeminiFunctionCall).args ||
-            (toolCall as any).function?.arguments || {};
+            (toolCall as OpenAIFunctionCall).function?.arguments || {};
         const argsString = JSON.stringify(args);
 
         const hashString = `${toolName}_${argsString}`;
@@ -80,7 +80,7 @@ export function Agent() {
     const addToolCallStatus = (toolCall: FunctionCall, status: 'pending' | 'success' | 'error', errorMessage?: string) => {
         const toolName = (toolCall as AnthropicFunctionCall).name ||
             (toolCall as GeminiFunctionCall).name ||
-            (toolCall as any).function?.name ||
+            (toolCall as OpenAIFunctionCall).function?.name ||
             'unknown_tool';
 
         const toolCallId = generateToolCallId(toolCall);
