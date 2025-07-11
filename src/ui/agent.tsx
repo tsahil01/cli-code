@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog } from "./components/index.js";
-import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan } from "../types.js";
+import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
 import { ToolConfirmationDialog } from './components/tool-confirmation-dialog.js';
@@ -131,7 +131,7 @@ export function Agent() {
                 }]);
                 if (metadata.toolCalls && metadata.toolCalls.length > 0) {
                     setCurrentToolCall(metadata.toolCalls[0]);
-                    await handleToolCall(metadata.toolCalls[0]);
+                    await handleToolCall(metadata.toolCalls[0], metadata);
                 }
             },
             () => {
@@ -143,7 +143,7 @@ export function Agent() {
         );
     }
 
-    const handleToolCall = async (toolCall: FunctionCall) => {
+    const handleToolCall = async (toolCall: FunctionCall, metadata: MessageMetadata) => {
         const config = await readConfigFile();
 
         if (config.acceptAllToolCalls) {
@@ -158,9 +158,10 @@ export function Agent() {
                 let newMsg: Message = {
                     content: content,
                     role: 'user',
-                    ignoreInDisplay: false,
+                    ignoreInDisplay: true,
                     metadata: {
-                        toolCalls: [toolCall]
+                        toolCalls: [toolCall],
+                        thinkingSignature: metadata.thinkingSignature
                     }
                 }
                 setMessages(prev => {
@@ -174,7 +175,11 @@ export function Agent() {
                 const errorMsg: Message = {
                     content: `Tool execution failed: ${errorMessage}`,
                     role: 'user',
-                    ignoreInDisplay: false
+                    ignoreInDisplay: true,
+                    metadata: {
+                        toolCalls: [toolCall],
+                        thinkingSignature: metadata.thinkingSignature
+                    }
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, errorMsg];
