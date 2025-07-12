@@ -153,7 +153,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                             const metadata: MessageMetadata = {
                                 thinkingContent: event.summary?.thinking || '',
 
-                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || event.summary?.toolCalls[0]?.thoughtSignature || event.summary?.content[0]?.signature || "",
+                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || event.summary?.toolCalls[0]?.thoughtSignature || event.summary?.content[0]?.thoughtSignature || "",
 
                                 toolCalls: event.fullMessage?.content?.filter((c: any) => c.type === 'tool_use') || event.summary?.toolCalls?.map((c: any) => c.functionCall) || event.summary?.toolCalls || [],
 
