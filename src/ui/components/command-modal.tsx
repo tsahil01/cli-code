@@ -1,26 +1,31 @@
 import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { Command, CommandOption } from '../../types';
+import { Command, CommandOption, ModelCapabilities, ModelData } from '../../types';
 import { SettingsEditor } from './settings-editor.js';
+import { ModelSelector } from './model-selector.js';
 
 interface CommandModalProps {
     command: Command;
     onClose: () => void;
+    onModelSelect?: (model: ModelCapabilities) => void;
+    currentModel?: ModelData | null;
 }
 
 interface OptionState {
     [key: string]: any;
 }
 
-export const CommandModal = ({ command, onClose }: CommandModalProps) => {
+export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: CommandModalProps) => {
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
     const [optionValues, setOptionValues] = useState<OptionState>({});
     const [isConfirming, setIsConfirming] = useState(false);
     const [showSettingsEditor, setShowSettingsEditor] = useState(false);
+    const [showModelSelector, setShowModelSelector] = useState(false);
 
     const handleCommandExecute = async (command: Command, options: Record<string, any>) => {
         switch (command.name) {
             case 'model':
+                setShowModelSelector(true);
                 break;
             case 'sessions':
                 break;
@@ -36,8 +41,7 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
     const currentOption = selectableOptions[selectedOptionIndex];
 
     useInput((input, key) => {
-        if (showSettingsEditor) {
-            // Settings editor handles its own input
+        if (showSettingsEditor || showModelSelector) {
             return;
         }
 
@@ -79,6 +83,8 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
                 setIsConfirming(true);
             } else if (command.name === 'settings') {
                 handleCommandExecute(command, optionValues);
+            } else if (command.name === 'model') {
+                handleCommandExecute(command, optionValues);
             } else if (handleCommandExecute) {
                 handleCommandExecute(command, optionValues);
                 onClose();
@@ -93,6 +99,25 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
                     setShowSettingsEditor(false);
                     onClose();
                 }} 
+            />
+        );
+    }
+
+    if (showModelSelector) {
+        return (
+            <ModelSelector 
+                onSelect={(model) => {
+                    if (onModelSelect) {
+                        onModelSelect(model);
+                    }
+                    setShowModelSelector(false);
+                    onClose();
+                }}
+                onClose={() => {
+                    setShowModelSelector(false);
+                    onClose();
+                }}
+                currentModel={currentModel || undefined}
             />
         );
     }
@@ -145,8 +170,14 @@ export const CommandModal = ({ command, onClose }: CommandModalProps) => {
             case 'model':
                 return (
                     <Box flexDirection="column">
-                        {command.options.map(renderOption)}
-                        <Text dimColor>↑↓ select • enter confirm</Text>
+                        <Text color="cyan">Switch AI Model</Text>
+                        <Text color="gray">Select from available models based on your API keys</Text>
+                        {currentModel && (
+                            <Box marginTop={1}>
+                                <Text color="dim">Current: {currentModel.modelCapabilities.displayName}</Text>
+                            </Box>
+                        )}
+                        <Text dimColor>enter continue • esc cancel</Text>
                     </Box>
                 );
 

@@ -1,11 +1,11 @@
 import React from "react";
-import { Box } from "ink";
+import { Box, Text } from "ink";
 import { FileSelector } from "./file-selector.js";
 import { CommandSuggestions } from "./command-suggestions.js";
 import { AttachedFiles } from "./attached-files.js";
 import { InputDisplay } from "./input-display.js";
 import { useChatInput } from "./use-chat-input.js";
-import { SelectedFile, Command, FunctionCall } from "../../types.js";
+import { SelectedFile, Command, FunctionCall, ModelData } from "../../types.js";
 
 interface ChatInputProps {
 	onSend: (message: string, files: SelectedFile[]) => void;
@@ -13,9 +13,10 @@ interface ChatInputProps {
 	isProcessing?: boolean;
 	isDisabled?: boolean;
 	currentToolCall?: FunctionCall | null;
+	currentModel?: ModelData | null;
 }
 
-export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentToolCall }: ChatInputProps) => {
+export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel }: ChatInputProps) => {
 	const {
 		input,
 		showFileSelector,
@@ -39,12 +40,22 @@ export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentT
 				visible={showSuggestions}
 			/>
 
-			<InputDisplay 
-				input={input} 
-				isProcessing={isProcessing}
-				currentToolCall={currentToolCall}
-			/>
-			
+			<Box flexGrow={1} flexDirection="column">
+				<InputDisplay
+					input={input}
+					isProcessing={isProcessing}
+					currentToolCall={currentToolCall}
+				/>
+			</Box>
+			{currentModel && (
+				<Box alignSelf="flex-end" marginTop={1}>
+					<Text color="dim" dimColor>
+						{`> ${currentModel.modelCapabilities.displayName} (${currentModel.modelCapabilities.thinking && "thinking"})`}
+					</Text>
+				</Box>
+			)}
+			{/* </Box> */}
+
 			<AttachedFiles files={selectedFiles} />
 		</Box>
 	);
