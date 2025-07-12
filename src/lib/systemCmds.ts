@@ -29,14 +29,7 @@ export const systemCmds: Command[] = [{
     description: "switch model",
     category: "model",
     args: [],
-    options: [{
-        name: "model",
-        description: "Select AI model to use",
-        type: "select",
-        choices: ["GPT-4", "GPT-3.5-Turbo", "Claude-3"],
-        default: "GPT-4",
-        required: true
-    }],
+    options: [],
 },{
     name: "mode",
     description: "change usage mode (lite or full)",
