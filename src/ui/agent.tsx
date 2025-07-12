@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog } from "./components/index.js";
-import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata, OpenAIFunctionCall } from "../types.js";
+import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata, OpenAIFunctionCall, ModelCapabilities } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
 import { ToolConfirmationDialog } from './components/tool-confirmation-dialog.js';
@@ -9,6 +9,7 @@ import { systemCmds } from '../lib/systemCmds.js';
 import { chat } from '../lib/chat.js';
 import { runTool } from '../lib/tools.js';
 import { readConfigFile, appendConfigFile } from '../lib/configMngt.js';
+import { getAvailableModels } from '../lib/models.js';
 
 export function Agent() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -19,15 +20,12 @@ export function Agent() {
     const [pendingToolCall, setPendingToolCall] = useState<FunctionCall | null>(null);
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
     const [toolCallHistory, setToolCallHistory] = useState<ToolCallStatus[]>([]);
-    const [modelData, setModelData] = useState<ModelData>({
-        provider: 'gemini',
-        model: 'gemini-2.5-pro',
-    });
+    const [modelData, setModelData] = useState<ModelData | null>(null);
     const [plan, setPlan] = useState<Plan>({ mode: 'lite', addOns: [] });
     const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
 
     useEffect(() => {
-        const loadPlan = async () => {
+        const loadConfigAndModels = async () => {
             try {
                 const config = await readConfigFile();
                 if (config.plan) {
@@ -37,12 +35,57 @@ export function Agent() {
                     setPlan(defaultPlan);
                     await appendConfigFile({ plan: defaultPlan });
                 }
+
+                const availableModels = await getAvailableModels();
+                
+                if (config.selectedModel && availableModels.length > 0) {
+                    const savedModel = availableModels.find(m => 
+                        m.provider === config.selectedModel?.provider && 
+                        m.modelName === config.selectedModel?.model
+                    );
+                    
+                    if (savedModel) {
+                        setModelData({
+                            provider: savedModel.provider as ModelData['provider'],
+                            model: savedModel.modelName,
+                            modelCapabilities: savedModel
+                        });
+                    } else if (availableModels.length > 0) {
+                        const firstModel = availableModels[0];
+                        setModelData({
+                            provider: firstModel.provider as ModelData['provider'],
+                            model: firstModel.modelName,
+                            modelCapabilities: firstModel
+                        });
+                        
+                        await appendConfigFile({ 
+                            selectedModel: {
+                                provider: firstModel.provider,
+                                model: firstModel.modelName
+                            }
+                        });
+                    }
+                } else if (availableModels.length > 0) {
+                    const firstModel = availableModels[0];
+                    setModelData({
+                        provider: firstModel.provider as ModelData['provider'],
+                        model: firstModel.modelName,
+                        modelCapabilities: firstModel
+                    });
+                    
+                    await appendConfigFile({ 
+                        selectedModel: {
+                            provider: firstModel.provider,
+                            model: firstModel.modelName
+                        }
+                    });
+                }
             } catch (error) {
-                console.error('Error loading plan:', error);
+                console.error('Error loading config and models:', error);
             }
         };
 
-        loadPlan();
+        loadConfigAndModels();
     }, []);
 
     useInput((input, key) => {
@@ -288,12 +331,14 @@ export function Agent() {
             const updatedMessages = [...prev, { content: userMessage, role: 'user' as const }];
 
             setTimeout(async () => {
+                if (!modelData) {
+                    return;
+                }
                 try {
                     const chatRequest: ChatRequest = {
                         messages: updatedMessages,
                         provider: modelData?.provider,
                         model: modelData?.model,
-                        base_url: "https://openrouter.ai/api/v1",
                         plan: plan // Include plan in chat request
                     };
 
@@ -323,11 +368,13 @@ export function Agent() {
         setContent('');
 
         try {
+            if (!modelData) {
+                return;
+            }
             const chatRequest: ChatRequest = {
                 messages: msgs,
                 provider: modelData?.provider,
                 model: modelData?.model,
-                base_url: "https://openrouter.ai/api/v1",
                 plan: plan
             };
 
@@ -346,6 +393,31 @@ export function Agent() {
             setCurrentToolCall(null);
         }
     }
+
+    const handleModelSelect = async (model: ModelCapabilities) => {
+        setModelData({
+            provider: model.provider as ModelData['provider'],
+            model: model.modelName,
+            modelCapabilities: model
+        });
+        
+        try {
+            await appendConfigFile({ 
+                selectedModel: {
+                    provider: model.provider,
+                    model: model.modelName
+                }
+            });
+        } catch (error) {
+            console.error('Error saving selected model:', error);
+        }
+        
+        setMessages(prev => [...prev, {
+            content: `Model changed to ${model.displayName} (${model.provider})`,
+            role: 'system',
+            ignoreInLLM: true
+        }]);
+    };
 
     return (
         <>
@@ -372,11 +444,14 @@ export function Agent() {
                 isProcessing={isProcessing}
                 isDisabled={!!activeCommand || !!pendingToolCall || showPlanDialog}
                 currentToolCall={currentToolCall}
+                currentModel={modelData}
             />
             {activeCommand && (
                 <CommandModal
                     command={activeCommand}
                     onClose={() => setActiveCommand(null)}
+                    onModelSelect={handleModelSelect}
+                    currentModel={modelData}
                 />
             )}
             {showPlanDialog && (
