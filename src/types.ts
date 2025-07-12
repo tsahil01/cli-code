@@ -114,6 +114,9 @@ export interface ConfigFormat {
     user?: UserData;
     acceptAllToolCalls?: boolean;
     plan: Plan;
+    ANTHROPIC_API_KEY?: string;
+    GEMINI_API_KEY?: string;
+    selectedModel?: ModelData;
 }
 
 
@@ -228,11 +231,13 @@ export interface ChatRequest {
     temperature?: number;
     max_tokens?: number;
     plan: Plan;
+    apiKey?: string;
 }
 
 export interface ModelData {
     provider: "anthropic" | "openai" | "gemini" | "other",
-    model: string
+    model: string,
+    modelCapabilities: ModelCapabilities
 }
 
 export interface ToolCallStatus {
@@ -246,4 +251,25 @@ export interface ToolCallStatus {
 export interface Plan {
     mode: 'lite' | 'full';
     addOns: ('memory' | 'github' | 'advanced-context')[]; // Only available for 'lite' mode
+}
+
+export interface ModelCapabilities {
+    modelName: string;
+    provider: string;
+    displayName: string;
+    maxInputTokens: number; // maximum input tokens (context window)
+    maxOutputTokens: number; // maximum output tokens
+    thinking: boolean;
+    minThinkingTokens?: number;
+    maxThinkingTokens?: number;
+    createdAt?: string;
+}
+
+export interface ModelsResponse {
+    models: {
+        anthropic: ModelCapabilities[];
+        openai: ModelCapabilities[];
+        gemini: ModelCapabilities[];
+        other: ModelCapabilities[];
+    };
 }
