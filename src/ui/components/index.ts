@@ -15,4 +15,6 @@ export { AttachedFiles } from './attached-files.js';
 export { ToolConfirmationDialog } from './tool-confirmation-dialog.js';
 export { useChatInput } from './use-chat-input.js';
 export { PlanDisplay } from './plan-display.js';
-export { PlanDialog } from './plan-dialog.js'; 
+export { PlanDialog } from './plan-dialog.js';
+export { ApiKeySetup } from './api-key-setup.js';
+export { ModelSelector } from './model-selector.js'; 

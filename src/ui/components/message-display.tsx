@@ -49,26 +49,34 @@ export const MessageDisplay = ({
                         marginY={isFirstInGroup ? 1 : 0}
                         marginBottom={isLastInGroup ? 1 : 0}
                     >
-                        <Text color={message.role === 'user' ? "cyan" : "magenta"}>
-                            {message.role === 'user' ? 'User: ' : 'Assistant: '}
-                        </Text>
+                        {message.role === 'system' ? (
+                            <Text color="gray">
+                                {`> ${message.content}`}
+                            </Text>
+                        ) : (
+                            <>
+                                <Text color={message.role === 'user' ? "cyan" : "magenta"}>
+                                    {message.role === 'user' ? 'User: ' : 'Assistant: '}
+                                </Text>
 
-                        <Box
-                            paddingX={1}
-                        >
-                            {message.content && message.content.length > 0 && (
-                                <MarkdownRenderer
-                                    content={message.content || ''}
-                                    dimmed={false}
-                                />
-                            )}
-                            {(!message.content || message.content.length === 0) && message.metadata?.thinkingContent && (
-                                <MarkdownRenderer
-                                    content={`${message.metadata?.thinkingContent}` || ''}
-                                    dimmed={true}
-                                />
-                            )}
-                        </Box>
+                                <Box
+                                    paddingX={1}
+                                >
+                                    {message.content && message.content.length > 0 && (
+                                        <MarkdownRenderer
+                                            content={message.content || ''}
+                                            dimmed={false}
+                                        />
+                                    )}
+                                    {(!message.content || message.content.length === 0) && message.metadata?.thinkingContent && (
+                                        <MarkdownRenderer
+                                            content={`${message.metadata?.thinkingContent}` || ''}
+                                            dimmed={true}
+                                        />
+                                    )}
+                                </Box>
+                            </>
+                        )}
                     </Box>
                 );
             })}

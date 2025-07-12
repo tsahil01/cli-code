@@ -33,6 +33,15 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         }
 
         const messages = data.messages;
+        
+        let apiKey = data.apiKey;
+        if (!apiKey) {
+            if (data.provider === 'anthropic') {
+                apiKey = config.ANTHROPIC_API_KEY;
+            } else if (data.provider === 'gemini') {
+                apiKey = config.GEMINI_API_KEY;
+            }
+        }
 
         const requestBody = {
             messages,
@@ -42,6 +51,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
             temperature: data.temperature,
             max_tokens: data.max_tokens,
             plan: data.plan,
+            apiKey: apiKey,
         }
         const response = await fetch(`${WORKER_URL}/chat/stream`, {
             method: "POST",
@@ -90,7 +100,6 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                 };
             }
 
-            // Call doneCallback with error information
             doneCallback({
                 error: chatError
             });
@@ -153,7 +162,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                             const metadata: MessageMetadata = {
                                 thinkingContent: event.summary?.thinking || '',
 
-                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || event.summary?.toolCalls[0]?.thoughtSignature || event.summary?.content[0]?.signature || "",
+                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || event.summary?.toolCalls[0]?.thoughtSignature || event.summary?.content[0]?.thoughtSignature || "",
 
                                 toolCalls: event.fullMessage?.content?.filter((c: any) => c.type === 'tool_use') || event.summary?.toolCalls?.map((c: any) => c.functionCall) || event.summary?.toolCalls || [],
 

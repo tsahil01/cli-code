@@ -4,7 +4,7 @@ import { Agent } from "./ui/agent.js";
 import { readConfigFile, appendConfigFile } from "./lib/configMngt.js";
 import { login } from "./lib/auth.js";
 import { Initialization } from "./ui/components/initlization.js";
-import { ConnectionFailureDialog } from "./ui/components/index.js";
+import { ConnectionFailureDialog, ApiKeySetup } from "./ui/components/index.js";
 import { init, getConnectionStatus, setAllowWithoutConnection, retryConnection } from "./lib/editor.js";
 
 function UI() {
@@ -13,6 +13,8 @@ function UI() {
     const [loginError, setLoginError] = useState<string>();
     const [showConnectionDialog, setShowConnectionDialog] = useState(false);
     const [editorConnectionResolved, setEditorConnectionResolved] = useState(false);
+    const [needsApiKeySetup, setNeedsApiKeySetup] = useState(false);
+    const [apiKeySetupComplete, setApiKeySetupComplete] = useState(false);
     
     const initialize = async () => {
         setInitializing(true);
@@ -26,6 +28,12 @@ function UI() {
                 const accessToken = await login(config.refreshToken);
                 if (accessToken) {
                     setLoggedIn(true);
+                    const hasApiKeys = config.ANTHROPIC_API_KEY || config.GEMINI_API_KEY;
+                    if (!hasApiKeys) {
+                        setNeedsApiKeySetup(true);
+                    } else {
+                        setApiKeySetupComplete(true);
+                    }
                 } else {
                     setLoggedIn(false);
                     setLoginError('Invalid token. Please try again.');
@@ -46,6 +54,7 @@ function UI() {
             const accessToken = await login(token);
             if (accessToken) {
                 setLoggedIn(true);
+                setNeedsApiKeySetup(true);
             } else {
                 setLoggedIn(false);
                 setLoginError('Invalid token. Please try again.');
@@ -55,6 +64,16 @@ function UI() {
             setLoginError('Authentication failed. Please try again.');
         }
         setInitializing(false);
+    };
+
+    const handleApiKeySetup = async (apiKeys: { ANTHROPIC_API_KEY?: string; GEMINI_API_KEY?: string }) => {
+        try {
+            await appendConfigFile(apiKeys);
+            setNeedsApiKeySetup(false);
+            setApiKeySetupComplete(true);
+        } catch (error) {
+            console.error('Error saving API keys:', error);
+        }
     };
 
     const checkEditorConnection = async () => {
@@ -105,6 +124,14 @@ function UI() {
         );
     }
 
+    if (needsApiKeySetup) {
+        return (
+            <ApiKeySetup 
+                onComplete={handleApiKeySetup}
+            />
+        );
+    }
+
     if (showConnectionDialog) {
         return (
             <Box flexDirection="column" marginX={2} width={"80%"} alignSelf="center">
@@ -117,6 +144,17 @@ function UI() {
     }
 
     if (!editorConnectionResolved) {
+        return (
+            <Box flexDirection="column" marginX={2} width={"80%"} alignSelf="center">
+                <Initialization 
+                    isLoading={true} 
+                    isLoggedIn={true} 
+                />
+            </Box>
+        );
+    }
+
+    if (!apiKeySetupComplete) {
         return (
             <Box flexDirection="column" marginX={2} width={"80%"} alignSelf="center">
                 <Initialization 

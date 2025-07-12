@@ -7,6 +7,26 @@ import { getClient } from "./editor.js";
 
 const runningProcesses: { [key: string]: any } = {};
 
+// Timeout configuration
+const TIMEOUTS = {
+    COMMAND: 15000,        // 15 seconds for command execution
+    FILE_READ: 10000,      // 10 seconds for file reading
+    FILE_WRITE: 10000,     // 10 seconds for file writing
+    GREP_SEARCH: 20000,    // 20 seconds for grep searches
+    OPEN_OPERATION: 10000, // 10 seconds for opening files/browser
+    PROCESS_OPERATION: 15000 // 15 seconds for process operations
+};
+
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operationName: string): Promise<T> => {
+    return Promise.race([
+        promise,
+        new Promise<never>((_, reject) => {
+            setTimeout(() => {
+                reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+            }, timeoutMs);
+        })
+    ]);
+};
 
 const expandHomeDir = (filePath: string) => {
     if (filePath.startsWith('~')) {
@@ -19,7 +39,8 @@ export const run_command = (command: string) => {
     if (!command || typeof command !== 'string') {
         return Promise.reject(new Error('Invalid command: Command must be a non-empty string'));
     }
-    return new Promise((resolve, reject) => {
+    
+    const commandPromise = new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(`Command execution failed: ${error.message}`));
@@ -28,6 +49,8 @@ export const run_command = (command: string) => {
             resolve(`stdout: ${stdout}\n  stderr: ${stderr}`);
         });
     });
+
+    return withTimeout(commandPromise, TIMEOUTS.COMMAND, 'Command execution');
 }
 
 export const check_current_directory = () => {
@@ -48,7 +71,8 @@ export const read_file = (filePath: string) => {
         return Promise.reject(new Error('Invalid file path: Path must be a non-empty string'));
     }
     const expandedPath = expandHomeDir(filePath.trim());
-    return new Promise((resolve, reject) => {
+    
+    const readPromise = new Promise((resolve, reject) => {
         fs.readFile(expandedPath, 'utf8', (error, data) => {
             if (error) {
                 reject(new Error(`Failed to read file: ${error.message}`));
@@ -57,6 +81,8 @@ export const read_file = (filePath: string) => {
             resolve(`File ${expandedPath} read successfully: ${data}`);
         });
     });
+
+    return withTimeout(readPromise, TIMEOUTS.FILE_READ, 'File read operation');
 }
 
 export const write_file = (filePath: string, content: string) => {
@@ -67,7 +93,8 @@ export const write_file = (filePath: string, content: string) => {
         return Promise.reject(new Error('Invalid content: Content cannot be null or undefined'));
     }
     const expandedPath = expandHomeDir(filePath.trim());
-    return new Promise((resolve, reject) => {
+    
+    const writePromise = new Promise((resolve, reject) => {
         fs.writeFile(expandedPath, content, (error) => {
             if (error) {
                 reject(new Error(`Failed to write file: ${error.message}`));
@@ -76,13 +103,16 @@ export const write_file = (filePath: string, content: string) => {
             resolve(`File ${expandedPath} written successfully`);
         });
     });
+
+    return withTimeout(writePromise, TIMEOUTS.FILE_WRITE, 'File write operation');
 }
 
 export const open_file = (filePath: string) => {
     if (!filePath || typeof filePath !== 'string') {
         return Promise.reject(new Error('Invalid file path: Path must be a non-empty string'));
     }
-    return new Promise((resolve, reject) => {
+    
+    const openPromise = new Promise((resolve, reject) => {
         exec(`xdg-open ${filePath}`, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(`Failed to open file: ${error.message}`));
@@ -91,13 +121,16 @@ export const open_file = (filePath: string) => {
             resolve(`File ${filePath} opened successfully`);
         });
     });
+
+    return withTimeout(openPromise, TIMEOUTS.OPEN_OPERATION, 'File open operation');
 }
 
 export const open_browser = (url: string) => {
     if (!url || typeof url !== 'string') {
         return Promise.reject(new Error('Invalid URL: URL must be a non-empty string'));
     }
-    return new Promise((resolve, reject) => {
+    
+    const browserPromise = new Promise((resolve, reject) => {
         exec(`xdg-open ${url}`, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(`Failed to open browser: ${error.message}`));
@@ -106,6 +139,8 @@ export const open_browser = (url: string) => {
             resolve(`Browser opened successfully`);
         });
     });
+
+    return withTimeout(browserPromise, TIMEOUTS.OPEN_OPERATION, 'Browser open operation');
 }
 
 export const run_background_command = (command: string, processId: string) => {
@@ -115,7 +150,8 @@ export const run_background_command = (command: string, processId: string) => {
     if (!processId || typeof processId !== 'string') {
         return Promise.reject(new Error('Invalid process ID: Process ID must be a non-empty string'));
     }
-    return new Promise((resolve, reject) => {
+    
+    const processPromise = new Promise((resolve, reject) => {
         try {
             const [cmd, ...args] = command.split(' ');
             const process = spawn(cmd, args, {
@@ -125,18 +161,21 @@ export const run_background_command = (command: string, processId: string) => {
 
             process.unref();
             runningProcesses[processId] = process;
-            return Promise.resolve(`Process started with ID: ${processId}`);
+            resolve(`Process started with ID: ${processId}`);
         } catch (error) {
-            return Promise.reject(new Error(`Failed to start background process: ${error instanceof Error ? error.message : 'Unknown error'}`));
+            reject(new Error(`Failed to start background process: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
     });
+
+    return withTimeout(processPromise, TIMEOUTS.PROCESS_OPERATION, 'Background process start');
 }
 
 export const stop_process = (processId: string) => {
     if (!processId || typeof processId !== 'string') {
         return Promise.reject(new Error('Invalid process ID: Process ID must be a non-empty string'));
     }
-    return new Promise((resolve, reject) => {
+    
+    const stopPromise = new Promise((resolve, reject) => {
         const process = runningProcesses[processId];
         if (!process) {
             reject(new Error(`No process found with ID: ${processId}`));
@@ -151,6 +190,8 @@ export const stop_process = (processId: string) => {
             reject(new Error(`Failed to stop process: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
     });
+
+    return withTimeout(stopPromise, TIMEOUTS.PROCESS_OPERATION, 'Process stop operation');
 }
 
 export const grep_search = (searchTerm: string, filePath: string) => {
@@ -161,7 +202,8 @@ export const grep_search = (searchTerm: string, filePath: string) => {
         return Promise.reject(new Error('Invalid file path: File path must be a non-empty string'));
     }
     const expandedPath = expandHomeDir(filePath.trim());
-    return new Promise((resolve, reject) => {
+    
+    const grepPromise = new Promise((resolve, reject) => {
         exec(`grep -r ${searchTerm} ${expandedPath}`, (error, stdout, stderr) => {
             if (error) {
                 reject(new Error(`Failed to grep search: ${error.message}`));
@@ -170,6 +212,8 @@ export const grep_search = (searchTerm: string, filePath: string) => {
             resolve(`Grep search result: ${stdout}`);
         });
     });
+
+    return withTimeout(grepPromise, TIMEOUTS.GREP_SEARCH, 'Grep search operation');
 }
 
 export const is_process_running = (processId: string) => {
