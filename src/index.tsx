@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import React, { useState, useEffect } from "react";
 import { render, Box } from "ink";
 import { Agent } from "./ui/agent.js";
