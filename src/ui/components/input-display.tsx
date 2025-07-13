@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import { get_active_file, get_text_selection } from "../../lib/tools.js";
-import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunctionCall } from "../../types.js";
+import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunctionCall, ModelData } from "../../types.js";
 
 interface InputDisplayProps {
 	input: string;
 	isProcessing?: boolean;
 	currentToolCall?: FunctionCall | null;
+	currentModel?: ModelData | null;
 }
 
 const LoadingIndicator = () => {
@@ -23,7 +24,7 @@ const LoadingIndicator = () => {
 	return <Text color="cyan">{frames[frame]}</Text>;
 };
 
-export const InputDisplay = ({ input, isProcessing, currentToolCall }: InputDisplayProps) => {
+export const InputDisplay = ({ input, isProcessing, currentToolCall, currentModel }: InputDisplayProps) => {
 	const [activeFile, setActiveFile] = useState<ActiveFileInfo | null>(null);
 	const [textSelection, setTextSelection] = useState<TextSelectionInfo | null>(null);
 
@@ -78,9 +79,19 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall }: InputDisp
 					</Box>
 				)}
 			</Box>
+			<Box flexDirection="row" justifyContent="space-between">
+
+			{currentModel && (
+				<Box alignSelf="flex-start">
+					<Text color= "magenta">
+						{`> ${currentModel.modelCapabilities.displayName} (${currentModel.modelCapabilities.thinking && "thinking"})`}
+					</Text>
+				</Box>
+			)}
 			{activeFile && (
-				<Box justifyContent="flex-end" marginTop={0}>
-					<Text color="gray">
+				<Box alignSelf="flex-end">
+					<Text color="yellow" bold>
+						{"> "}
 						{activeFile.name}
 						{textSelection && (
 							<Text>
@@ -91,6 +102,7 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall }: InputDisp
 					</Text>
 				</Box>
 			)}
+					</Box>
 		</Box>
 	);
 }; 

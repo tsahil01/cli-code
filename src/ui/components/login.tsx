@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import BigText from 'ink-big-text';
+import { SmallHeader } from './small-header.js';
 
 interface LoginProps {
     onLogin: (token: string) => void;
@@ -36,8 +37,7 @@ export const Login = ({ onLogin, loginError }: LoginProps) => {
 
     return (
         <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-            <Box marginBottom={2}>
-            </Box>
+            <SmallHeader />
             
             <Box flexDirection="column" marginBottom={1}>
                 <Text color="white" bold>Welcome to CLI CODE!</Text>

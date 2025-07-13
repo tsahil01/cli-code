@@ -17,4 +17,6 @@ export { useChatInput } from './use-chat-input.js';
 export { PlanDisplay } from './plan-display.js';
 export { PlanDialog } from './plan-dialog.js';
 export { ApiKeySetup } from './api-key-setup.js';
-export { ModelSelector } from './model-selector.js'; 
+export { ApiKeyManager } from './api-key-manager.js';
+export { ModelSelector } from './model-selector.js';
+export { SmallHeader } from './small-header.js'; 
