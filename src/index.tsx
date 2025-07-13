@@ -74,7 +74,7 @@ function UI() {
             setNeedsApiKeySetup(false);
             setApiKeySetupComplete(true);
         } catch (error) {
-            console.error('Error saving API keys:', error);
+            // console.error('Error saving API keys:', error);
         }
     };
 
