@@ -5,7 +5,7 @@ import { CommandSuggestions } from "./command-suggestions.js";
 import { AttachedFiles } from "./attached-files.js";
 import { InputDisplay } from "./input-display.js";
 import { useChatInput } from "./use-chat-input.js";
-import { SelectedFile, Command, FunctionCall, ModelData } from "../../types.js";
+import { SelectedFile, Command, FunctionCall, ModelData, Plan } from "../../types.js";
 
 interface ChatInputProps {
 	onSend: (message: string, files: SelectedFile[]) => void;
@@ -14,9 +14,10 @@ interface ChatInputProps {
 	isDisabled?: boolean;
 	currentToolCall?: FunctionCall | null;
 	currentModel?: ModelData | null;
-}
+	plan: Plan;
+	}
 
-export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel }: ChatInputProps) => {
+export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel, plan }: ChatInputProps) => {
 	const {
 		input,
 		showFileSelector,
@@ -46,6 +47,7 @@ export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentT
 					isProcessing={isProcessing}
 					currentToolCall={currentToolCall}
 					currentModel={currentModel}
+					plan={plan}
 				/>
 			</Box>
 			{/* </Box> */}

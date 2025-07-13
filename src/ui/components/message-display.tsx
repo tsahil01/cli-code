@@ -12,7 +12,7 @@ interface MessageDisplayProps {
 
 const LoadingIndicator = () => {
     const [frame, setFrame] = React.useState(0);
-    const frames = ['◜', '◠', '◝', '◞', '◡', '◟']; 
+    const frames = ['◜', '◠', '◝', '◞', '◡', '◟'];
 
     React.useEffect(() => {
         const timer = setInterval(() => {
@@ -54,14 +54,9 @@ export const MessageDisplay = ({
                                 {`> ${message.content}`}
                             </Text>
                         ) : (
-                            <>
-                                <Text color={message.role === 'user' ? "cyan" : "magenta"}>
-                                    {message.role === 'user' ? 'User: ' : 'Assistant: '}
-                                </Text>
+                            <><Text color={message.role === 'user' ? "cyan" : "magenta"}>┃ </Text>
 
-                                <Box
-                                    paddingX={1}
-                                >
+                                <Box paddingX={1}>
                                     {message.content && message.content.length > 0 && (
                                         <MarkdownRenderer
                                             content={message.content || ''}

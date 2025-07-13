@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog } from "./components/index.js";
+import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog, CurrentDirectory } from "./components/index.js";
 import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata, OpenAIFunctionCall, ModelCapabilities } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
@@ -419,6 +419,8 @@ export function Agent() {
         }]);
     };
 
+
+
     return (
         <>
             <Header />
@@ -437,7 +439,6 @@ export function Agent() {
                 />
             )}
             <ToolStatusDisplay toolCalls={toolCallHistory} />
-            <PlanDisplay plan={plan} />
             <ChatInput
                 onSend={handleNewMsgSend}
                 commands={systemCmds}
@@ -445,6 +446,7 @@ export function Agent() {
                 isDisabled={!!activeCommand || !!pendingToolCall || showPlanDialog}
                 currentToolCall={currentToolCall}
                 currentModel={modelData}
+                plan={plan}
             />
             {activeCommand && (
                 <CommandModal

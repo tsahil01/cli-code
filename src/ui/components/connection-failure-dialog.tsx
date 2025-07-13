@@ -28,7 +28,7 @@ export const ConnectionFailureDialog = ({ onContinue, onRetry }: ConnectionFailu
     return (
         <Box flexDirection="column" marginY={1}>
             <Box marginBottom={1}>
-                <Text color="red">⚠️  Editor Context Bridge is not connected</Text>
+                <Text color="red">⚠️  Your Editor is not connected</Text>
             </Box>
             
             <Box marginBottom={1} flexDirection="column">

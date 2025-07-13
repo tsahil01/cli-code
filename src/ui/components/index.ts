@@ -19,4 +19,5 @@ export { PlanDialog } from './plan-dialog.js';
 export { ApiKeySetup } from './api-key-setup.js';
 export { ApiKeyManager } from './api-key-manager.js';
 export { ModelSelector } from './model-selector.js';
-export { SmallHeader } from './small-header.js'; 
+export { SmallHeader } from './small-header.js';
+export { CurrentDirectory } from './current-directory.js'; 
