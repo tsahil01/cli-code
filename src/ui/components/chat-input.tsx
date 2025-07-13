@@ -45,15 +45,9 @@ export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentT
 					input={input}
 					isProcessing={isProcessing}
 					currentToolCall={currentToolCall}
+					currentModel={currentModel}
 				/>
 			</Box>
-			{currentModel && (
-				<Box alignSelf="flex-end" marginTop={1}>
-					<Text color="dim" dimColor>
-						{`> ${currentModel.modelCapabilities.displayName} (${currentModel.modelCapabilities.thinking && "thinking"})`}
-					</Text>
-				</Box>
-			)}
 			{/* </Box> */}
 
 			<AttachedFiles files={selectedFiles} />
