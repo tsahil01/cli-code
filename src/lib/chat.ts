@@ -1,4 +1,4 @@
-import { ChatRequest, MessageMetadata, FunctionCall } from "../types.js";
+import { ChatRequest, MessageMetadata, FunctionCall, Message } from "../types.js";
 import { WORKER_URL } from "./const.js";
 import { readConfigFile } from "./configMngt.js";
 import { handleTokenExpiry } from "./auth.js";
@@ -32,7 +32,8 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
             throw new Error("No access token found");
         }
 
-        const messages = data.messages;
+        let messages = data.messages;
+        messages = messages.filter((message: Message) => message.ignoreInLLM);
         
         let apiKey = data.apiKey;
         if (!apiKey) {
