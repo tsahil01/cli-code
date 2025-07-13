@@ -421,7 +421,7 @@ export function Agent() {
 
     return (
         <>
-            <Header cmds={systemCmds} />
+            <Header />
             <MessageDisplay
                 messages={messages}
                 thinking={thinking}
