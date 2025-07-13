@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import { get_active_file, get_text_selection } from "../../lib/tools.js";
-import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunctionCall, ModelData } from "../../types.js";
+import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunctionCall, ModelData, Plan } from "../../types.js";
+import { PlanDisplay } from "./plan-display.js";
+import { CurrentDirectory } from "./current-directory.js";
 
 interface InputDisplayProps {
 	input: string;
 	isProcessing?: boolean;
 	currentToolCall?: FunctionCall | null;
 	currentModel?: ModelData | null;
+	plan: Plan;
 }
 
 const LoadingIndicator = () => {
@@ -24,7 +27,7 @@ const LoadingIndicator = () => {
 	return <Text color="cyan">{frames[frame]}</Text>;
 };
 
-export const InputDisplay = ({ input, isProcessing, currentToolCall, currentModel }: InputDisplayProps) => {
+export const InputDisplay = ({ input, isProcessing, currentToolCall, currentModel, plan }: InputDisplayProps) => {
 	const [activeFile, setActiveFile] = useState<ActiveFileInfo | null>(null);
 	const [textSelection, setTextSelection] = useState<TextSelectionInfo | null>(null);
 
@@ -51,8 +54,18 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 
 	return (
 		<Box flexDirection="column">
-			<Box 
-				borderStyle="round" 
+			<Box flexDirection="row" justifyContent="flex-end" gap={2}>
+				<PlanDisplay plan={plan} />
+				{currentModel && (
+					<Box alignSelf="flex-start">
+						<Text color="magenta">
+							{`> ${currentModel.modelCapabilities.displayName} ${currentModel.modelCapabilities.thinking ? "• thinking" : ""}`}
+						</Text>
+					</Box>
+				)}
+			</Box>
+			<Box
+				borderStyle="round"
 				borderColor="gray"
 				paddingX={1}
 				paddingY={0}
@@ -80,29 +93,22 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 				)}
 			</Box>
 			<Box flexDirection="row" justifyContent="space-between">
-
-			{currentModel && (
-				<Box alignSelf="flex-start">
-					<Text color= "magenta">
-						{`> ${currentModel.modelCapabilities.displayName} (${currentModel.modelCapabilities.thinking && "thinking"})`}
-					</Text>
-				</Box>
-			)}
-			{activeFile && (
-				<Box alignSelf="flex-end">
-					<Text color="yellow" bold>
-						{"> "}
-						{activeFile.name}
-						{textSelection && (
-							<Text>
-								<Text> • </Text>
-								<Text color="cyan">lines {textSelection.startLine + 1}-{textSelection.endLine + 1}</Text>
-							</Text>
-						)}
-					</Text>
-				</Box>
-			)}
+				<CurrentDirectory />
+				{activeFile && (
+					<Box alignSelf="flex-end">
+						<Text color="yellow" bold>
+							{"> "}
+							{activeFile.name}
+							{textSelection && (
+								<Text>
+									<Text> • </Text>
+									<Text color="cyan">lines {textSelection.startLine + 1}-{textSelection.endLine + 1}</Text>
+								</Text>
+							)}
+						</Text>
 					</Box>
+				)}
+			</Box>
 		</Box>
 	);
 }; 
