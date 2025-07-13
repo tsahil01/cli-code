@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
+import { SmallHeader } from './small-header.js';
 
 interface ApiKeySetupProps {
     onComplete: (apiKeys: { ANTHROPIC_API_KEY?: string; GEMINI_API_KEY?: string }) => void;
@@ -50,6 +51,8 @@ export const ApiKeySetup = ({ onComplete }: ApiKeySetupProps) => {
     if (currentStep === 'intro') {
         return (
             <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
+                <SmallHeader />
+                
                 <Box marginBottom={2}>
                     <Text color="cyan" bold>{`> API Key Setup!`}</Text>
                 </Box>
@@ -82,6 +85,7 @@ export const ApiKeySetup = ({ onComplete }: ApiKeySetupProps) => {
     if (currentStep === 'anthropic') {
         return (
             <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
+                <SmallHeader />
                 <Box marginBottom={2}>
                     <Text color="cyan" bold>{`> Anthropic API Key Setup`}</Text>
                 </Box>
@@ -112,6 +116,7 @@ export const ApiKeySetup = ({ onComplete }: ApiKeySetupProps) => {
     if (currentStep === 'gemini') {
         return (
             <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
+                <SmallHeader />
                 <Box marginBottom={2}>
                     <Text color="cyan" bold>{`> Gemini API Key Setup`}</Text>
                 </Box>
@@ -142,6 +147,7 @@ export const ApiKeySetup = ({ onComplete }: ApiKeySetupProps) => {
     if (currentStep === 'complete') {
         return (
             <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
+                <SmallHeader />
                 <Box marginBottom={2}>
                     <Text color="green" bold>✅ Setup Complete!</Text>
                 </Box>

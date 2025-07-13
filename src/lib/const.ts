@@ -1,8 +1,4 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const BACKEND_URL = process.env.BACKEND_URL
-const WORKER_URL = process.env.WORKER_URL
+const BACKEND_URL = `http://localhost:3000/api/v1`;
+const WORKER_URL = `http://localhost:4000/api/v1`;
 
 export { BACKEND_URL, WORKER_URL };

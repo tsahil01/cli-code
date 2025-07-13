@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { Command, CommandOption, ModelCapabilities, ModelData } from '../../types';
 import { SettingsEditor } from './settings-editor.js';
 import { ModelSelector } from './model-selector.js';
+import { ApiKeyManager } from './api-key-manager.js';
 
 interface CommandModalProps {
     command: Command;
@@ -21,6 +22,7 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
     const [isConfirming, setIsConfirming] = useState(false);
     const [showSettingsEditor, setShowSettingsEditor] = useState(false);
     const [showModelSelector, setShowModelSelector] = useState(false);
+    const [showApiKeyManager, setShowApiKeyManager] = useState(false);
 
     const handleCommandExecute = async (command: Command, options: Record<string, any>) => {
         switch (command.name) {
@@ -34,6 +36,9 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
             case 'settings':
                 setShowSettingsEditor(true);
                 break;
+            case 'api':
+                setShowApiKeyManager(true);
+                break;
         }
     };
 
@@ -41,7 +46,7 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
     const currentOption = selectableOptions[selectedOptionIndex];
 
     useInput((input, key) => {
-        if (showSettingsEditor || showModelSelector) {
+        if (showSettingsEditor || showModelSelector || showApiKeyManager) {
             return;
         }
 
@@ -85,6 +90,8 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
                 handleCommandExecute(command, optionValues);
             } else if (command.name === 'model') {
                 handleCommandExecute(command, optionValues);
+            } else if (command.name === 'api') {
+                handleCommandExecute(command, optionValues);
             } else if (handleCommandExecute) {
                 handleCommandExecute(command, optionValues);
                 onClose();
@@ -122,6 +129,19 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
         );
     }
 
+    if (showApiKeyManager) {
+        const action = optionValues.action || 'view';
+        return (
+            <ApiKeyManager 
+                action={action}
+                onClose={() => {
+                    setShowApiKeyManager(false);
+                    onClose();
+                }}
+            />
+        );
+    }
+
     const renderOption = (option: CommandOption) => {
         if (option.type === 'select' && option.choices) {
             const currentValue = optionValues[option.name] || option.choices[0];
@@ -154,6 +174,7 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
                         <Text>/sessions - Manage sessions</Text>
                         <Text>/new - New session</Text>
                         <Text>/model - Switch model</Text>
+                        <Text>/api - Manage API keys</Text>
                         <Text>/settings - Edit configuration file</Text>
                         <Text>/exit - Exit app</Text>
                     </Box>
@@ -204,6 +225,16 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
                                 <Text dimColor>enter continue • esc cancel</Text>
                             </>
                         )}
+                    </Box>
+                );
+
+            case 'api':
+                return (
+                    <Box flexDirection="column">
+                        <Text color="cyan">Manage API Keys</Text>
+                        <Text color="gray">View, add, or remove API keys for AI providers</Text>
+                        {command.options.map(renderOption)}
+                        <Text dimColor>↑↓ select • tab switch • enter confirm</Text>
                     </Box>
                 );
 

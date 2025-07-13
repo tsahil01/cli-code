@@ -50,6 +50,19 @@ export const systemCmds: Command[] = [{
     args: [],
     options: [],
 },{
+    name: "api",
+    description: "manage API keys",
+    category: "system",
+    args: [],
+    options: [{
+        name: "action",
+        description: "Select API key action",
+        type: "select",
+        choices: ["view", "add", "remove"],
+        default: "view",
+        required: true
+    }],
+},{
     name: "exit",
     description: "exit the app",
     category: "system",

@@ -413,8 +413,6 @@ export const runTool = async (tool: FunctionCall): Promise<any> => {
         toolInput = args ? (typeof args === 'string' ? JSON.parse(args) : args) : {};
     }
 
-    console.log('toolInput', JSON.stringify(toolInput, null, 2));
-
     if (!toolName) {
         throw new Error('Tool name not found in function call');
     }
