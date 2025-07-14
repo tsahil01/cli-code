@@ -33,7 +33,6 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         }
 
         let messages = data.messages;
-        messages = messages.filter((message: Message) => message.ignoreInLLM);
         
         let apiKey = data.apiKey;
         if (!apiKey) {
@@ -153,13 +152,11 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
 
                         case 'tool_call':
                             const toolCall = event.toolCall as FunctionCall;
-                            console.log('toolCall event:', toolCall);
                             currentToolCalls.push(toolCall);
                             toolCallCallback(currentToolCalls);
                             break;
 
                         case 'final':
-                            console.log('final', JSON.stringify(event, null, 2));
                             const metadata: MessageMetadata = {
                                 thinkingContent: event.summary?.thinking || '',
 
