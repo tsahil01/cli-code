@@ -95,7 +95,7 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
             if (key.return) {
                 if (selectedProvider === 'anthropic') {
                     setIsSubmitting(true);
-                    handleSaveConfig({ ANTHROPIC_API_KEY: inputValue.trim() }).then(() => {
+                    handleSaveConfig({ ['ANTHROPIC_API_KEY']: inputValue.trim() }).then(() => {
                         setIsSubmitting(false);
                         setCurrentStep('main');
                         setInputValue('');
@@ -103,7 +103,7 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                     });
                 } else if (selectedProvider === 'gemini') {
                     setIsSubmitting(true);
-                    handleSaveConfig({ GEMINI_API_KEY: inputValue.trim() }).then(() => {
+                    handleSaveConfig({ ['GEMINI_API_KEY']: inputValue.trim() }).then(() => {
                         setIsSubmitting(false);
                         setCurrentStep('main');
                         setInputValue('');
@@ -121,14 +121,14 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
             if (key.return) {
                 if (selectedProvider === 'anthropic') {
                     setIsSubmitting(true);
-                    handleSaveConfig({ ANTHROPIC_API_KEY: undefined }).then(() => {
+                    handleSaveConfig({ ['ANTHROPIC_API_KEY']: undefined }).then(() => {
                         setIsSubmitting(false);
                         setCurrentStep('main');
                         setSelectedProvider('anthropic');
                     });
                 } else if (selectedProvider === 'gemini') {
                     setIsSubmitting(true);
-                    handleSaveConfig({ GEMINI_API_KEY: undefined }).then(() => {
+                    handleSaveConfig({ ['GEMINI_API_KEY']: undefined }).then(() => {
                         setIsSubmitting(false);
                         setCurrentStep('main');
                         setSelectedProvider('anthropic');
@@ -157,12 +157,12 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                 
                 <Box flexDirection="column" marginBottom={2}>
                     <Text color="blue" bold>Anthropic API Key:</Text>
-                    <Text color="gray">{maskApiKey(config?.ANTHROPIC_API_KEY || '')}</Text>
+                    <Text color="gray">{maskApiKey(config?.['ANTHROPIC_API_KEY'] || '')}</Text>
                 </Box>
 
                 <Box flexDirection="column" marginBottom={2}>
                     <Text color="blue" bold>Gemini API Key:</Text>
-                    <Text color="gray">{maskApiKey(config?.GEMINI_API_KEY || '')}</Text>
+                    <Text color="gray">{maskApiKey(config?.['GEMINI_API_KEY'] || '')}</Text>
                 </Box>
 
                 <Box marginTop={1}>
@@ -188,13 +188,13 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                     <Box flexDirection="column" marginBottom={1}>
                         <Text color="yellow">1. Anthropic API Key</Text>
                         <Text color="gray">   For Claude models</Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.ANTHROPIC_API_KEY || '')}</Text>
+                        <Text color="gray">   Current: {maskApiKey(config?.['ANTHROPIC_API_KEY'] || '')}</Text>
                     </Box>
 
                     <Box flexDirection="column" marginBottom={2}>
                         <Text color="yellow">2. Gemini API Key</Text>
                         <Text color="gray">   For Google Gemini models</Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.GEMINI_API_KEY || '')}</Text>
+                        <Text color="gray">   Current: {maskApiKey(config?.['GEMINI_API_KEY'] || '')}</Text>
                     </Box>
 
                     <Box marginTop={1}>
