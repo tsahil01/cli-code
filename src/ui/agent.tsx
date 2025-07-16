@@ -49,7 +49,7 @@ export function Agent() {
                     
                     if (savedModel) {
                         setModelData({
-                            provider: savedModel.provider as ModelData['provider'],
+                            provider: savedModel.provider,
                             model: savedModel.modelName,
                             modelCapabilities: savedModel
                         });
@@ -340,6 +340,7 @@ export function Agent() {
                 try {
                     const chatRequest: ChatRequest = {
                         messages: updatedMessages,
+                        sdk: modelData?.modelCapabilities.sdk,
                         provider: modelData?.provider,
                         model: modelData?.model,
                         plan: plan
@@ -376,6 +377,7 @@ export function Agent() {
             }
             const chatRequest: ChatRequest = {
                 messages: msgs,
+                sdk: modelData?.modelCapabilities.sdk,
                 provider: modelData?.provider,
                 model: modelData?.model,
                 plan: plan
@@ -417,7 +419,7 @@ export function Agent() {
 
     const setModelAndSave = async (model: ModelCapabilities) => {
         setModelData({
-            provider: model.provider as ModelData['provider'],
+            provider: model.provider,
             model: model.modelName,
             modelCapabilities: model
         });
