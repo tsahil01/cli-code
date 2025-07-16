@@ -299,9 +299,13 @@ export const propose_change_vscode = async (changeProposal: ChangeProposalReques
         if (!client.canOperate()) {
             throw new Error('Editor Context Bridge is not connected. This operation requires a connection to the editor.');
         }
+        let proposalToSend = { ...changeProposal };
+        if (proposalToSend.filePath && !path.isAbsolute(proposalToSend.filePath)) {
+            proposalToSend.filePath = path.resolve(process.cwd(), proposalToSend.filePath);
+        }
 
         // Use 60 seconds timeout for user interaction tools
-        const response = await client.sendCommandWithPromise('proposeChange', [changeProposal], {}, 60000);
+        const response = await client.sendCommandWithPromise('proposeChange', [proposalToSend], {}, 60000);
         return handleCommandResponse(response);
     } catch (error) {
         throw new Error(`Failed to propose change: ${error instanceof Error ? error.message : 'Unknown error'}`);
