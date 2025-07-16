@@ -13,7 +13,8 @@
     "start": "node dist/index.js",
     "dev": "tsc -b && node dist/index.js",
     "link": "npm link",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "postinstall": "code --install-extension SahilTiwaskar.vscode-context-bridge || true"
   },
   "repository": {
     "type": "git",
