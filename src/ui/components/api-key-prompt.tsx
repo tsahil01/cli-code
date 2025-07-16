@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { appendConfigFile } from '../../lib/configMngt.js';
 import { ModelCapabilities } from '../../types.js';
-import { SmallHeader } from './small-header.js';
 
 interface ApiKeyPromptProps {
     model: ModelCapabilities;
@@ -73,8 +72,7 @@ export const ApiKeyPrompt = ({ model, onComplete, onCancel }: ApiKeyPromptProps)
     };
 
     return (
-        <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-            
+        <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>            
             <Box marginBottom={1}>
                 <Text color="yellow" bold>API Key Required</Text>
             </Box>
@@ -110,7 +108,7 @@ export const ApiKeyPrompt = ({ model, onComplete, onCancel }: ApiKeyPromptProps)
 
             <Box flexDirection="column" marginBottom={1}>
                 <Text color="dim">
-                    {isSubmitting ? '⏳ Saving...' : '↵ Press Enter to save • Esc to cancel'}
+                    {isSubmitting ? 'Saving...' : '↵ Press Enter to save • Esc to cancel'}
                 </Text>
             </Box>
 
