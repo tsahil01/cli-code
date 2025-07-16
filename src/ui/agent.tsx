@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog, CurrentDirectory } from "./components/index.js";
+import { Header, ChatInput, ToolStatusDisplay, PlanDisplay, PlanDialog, CurrentDirectory, ApiKeyPrompt } from "./components/index.js";
 import { Command, SelectedFile, Message, ChatRequest, ModelData, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, CommandResponse, ConfigFormat, ToolCallStatus, Plan, MessageMetadata, OpenAIFunctionCall, ModelCapabilities } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
 import { CommandModal } from './components/command-modal.js';
@@ -23,6 +23,9 @@ export function Agent() {
     const [modelData, setModelData] = useState<ModelData | null>(null);
     const [plan, setPlan] = useState<Plan>({ mode: 'lite', addOns: [] });
     const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
+    const [showApiKeyPrompt, setShowApiKeyPrompt] = useState<boolean>(false);
+    const [pendingModel, setPendingModel] = useState<ModelCapabilities | null>(null);
+    const [initialLoad, setInitialLoad] = useState<boolean>(true);
 
     useEffect(() => {
         const loadConfigAndModels = async () => {
@@ -46,42 +49,50 @@ export function Agent() {
                     
                     if (savedModel) {
                         setModelData({
-                            provider: savedModel.provider as ModelData['provider'],
+                            provider: savedModel.provider,
                             model: savedModel.modelName,
                             modelCapabilities: savedModel
                         });
                     } else if (availableModels.length > 0) {
-                        const firstModel = availableModels[0];
-                        setModelData({
-                            provider: firstModel.provider as ModelData['provider'],
-                            model: firstModel.modelName,
-                            modelCapabilities: firstModel
-                        });
+                        setMessages([{
+                            content: "Welcome to CLI Code! Please select a model to get started.",
+                            role: 'system',
+                            ignoreInLLM: true
+                        }]);
                         
-                        await appendConfigFile({ 
-                            selectedModel: {
-                                provider: firstModel.provider,
-                                model: firstModel.modelName
-                            }
-                        });
+                        const modelCommand = systemCmds.find(cmd => cmd.name === 'model');
+                        if (modelCommand) {
+                            setActiveCommand(modelCommand);
+                        }
                     }
                 } else if (availableModels.length > 0) {
-                    const firstModel = availableModels[0];
-                    setModelData({
-                        provider: firstModel.provider as ModelData['provider'],
-                        model: firstModel.modelName,
-                        modelCapabilities: firstModel
-                    });
+                    setMessages([{
+                        content: "Welcome to CLI Code! Please select a model to get started.",
+                        role: 'system',
+                        ignoreInLLM: true
+                    }]);
                     
-                    await appendConfigFile({ 
-                        selectedModel: {
-                            provider: firstModel.provider,
-                            model: firstModel.modelName
-                        }
-                    });
+                    const modelCommand = systemCmds.find(cmd => cmd.name === 'model');
+                    if (modelCommand) {
+                        setActiveCommand(modelCommand);
+                    }
+                } else {
+                    setMessages([{
+                        content: "No models available. Please check your backend configuration.",
+                        role: 'system',
+                        ignoreInLLM: true
+                    }]);
                 }
+                
+                setInitialLoad(false);
             } catch (error) {
                 console.error('Error loading config and models:', error);
+                setMessages([{
+                    content: "Error loading configuration. Please try again.",
+                    role: 'system',
+                    ignoreInLLM: true
+                }]);
+                setInitialLoad(false);
             }
         };
 
@@ -329,9 +340,10 @@ export function Agent() {
                 try {
                     const chatRequest: ChatRequest = {
                         messages: updatedMessages,
+                        sdk: modelData?.modelCapabilities.sdk,
                         provider: modelData?.provider,
                         model: modelData?.model,
-                        plan: plan // Include plan in chat request
+                        plan: plan
                     };
 
                     await handleChatEndpoint(chatRequest);
@@ -365,6 +377,7 @@ export function Agent() {
             }
             const chatRequest: ChatRequest = {
                 messages: msgs,
+                sdk: modelData?.modelCapabilities.sdk,
                 provider: modelData?.provider,
                 model: modelData?.model,
                 plan: plan
@@ -387,8 +400,26 @@ export function Agent() {
     }
 
     const handleModelSelect = async (model: ModelCapabilities) => {
+        try {
+            const config = await readConfigFile();
+            const apiKey = config[model.apiKeyName as keyof ConfigFormat];
+            
+            if (!apiKey) {
+                setPendingModel(model);
+                setShowApiKeyPrompt(true);
+                return;
+            }
+            
+            await setModelAndSave(model);
+        } catch (error) {
+            console.error('Error checking API key:', error);
+            await setModelAndSave(model);
+        }
+    };
+
+    const setModelAndSave = async (model: ModelCapabilities) => {
         setModelData({
-            provider: model.provider as ModelData['provider'],
+            provider: model.provider,
             model: model.modelName,
             modelCapabilities: model
         });
@@ -411,6 +442,20 @@ export function Agent() {
         }]);
     };
 
+    const handleApiKeyPromptComplete = async (success: boolean) => {
+        setShowApiKeyPrompt(false);
+        
+        if (success && pendingModel) {
+            await setModelAndSave(pendingModel);
+        }
+        
+        setPendingModel(null);
+    };
+
+    const handleApiKeyPromptCancel = () => {
+        setShowApiKeyPrompt(false);
+        setPendingModel(null);
+    };
 
 
     return (
@@ -435,7 +480,7 @@ export function Agent() {
                 onSend={handleNewMsgSend}
                 commands={systemCmds}
                 isProcessing={isProcessing}
-                isDisabled={!!activeCommand || !!pendingToolCall || showPlanDialog}
+                isDisabled={!!activeCommand || !!pendingToolCall || showPlanDialog || showApiKeyPrompt}
                 currentToolCall={currentToolCall}
                 currentModel={modelData}
                 plan={plan}
@@ -457,6 +502,13 @@ export function Agent() {
                         setShowPlanDialog(false);
                     }}
                     onCancel={() => setShowPlanDialog(false)}
+                />
+            )}
+            {showApiKeyPrompt && pendingModel && (
+                <ApiKeyPrompt
+                    model={pendingModel}
+                    onComplete={handleApiKeyPromptComplete}
+                    onCancel={handleApiKeyPromptCancel}
                 />
             )}
         </>

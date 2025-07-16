@@ -15,21 +15,25 @@ async function getModels() {
 
 async function getAvailableModels(): Promise<ModelCapabilities[]> {
     try {
-        const response = await fetch(`${WORKER_URL}/models`);
+        const response = await fetch(`${WORKER_URL}/models/available`);
         const data: ModelsResponse = await response.json();
-        
-        const config = await readConfigFile();
-        const hasAnthropicKey = !!config.ANTHROPIC_API_KEY;
-        const hasGeminiKey = !!config.GEMINI_API_KEY;
         
         let availableModels: ModelCapabilities[] = [];
         
-        if (hasAnthropicKey && data.models.anthropic) {
+        if (data.models.anthropic) {
             availableModels.push(...data.models.anthropic);
         }
         
-        if (hasGeminiKey && data.models.gemini) {
+        if (data.models.openai) {
+            availableModels.push(...data.models.openai);
+        }
+        
+        if (data.models.gemini) {
             availableModels.push(...data.models.gemini);
+        }
+        
+        if (data.models.other) {
+            availableModels.push(...data.models.other);
         }
         
         return availableModels;

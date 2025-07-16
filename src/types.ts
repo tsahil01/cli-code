@@ -114,9 +114,8 @@ export interface ConfigFormat {
     user?: UserData;
     acceptAllToolCalls?: boolean;
     plan: Plan;
-    ANTHROPIC_API_KEY?: string;
-    GEMINI_API_KEY?: string;
     selectedModel?: ModelData;
+    [key: `${string}_API_KEY`]: string | undefined;
 }
 
 
@@ -225,7 +224,8 @@ export interface ChatError {
 
 export interface ChatRequest {
     messages: Message[];
-    provider: "openai" | "anthropic" | "gemini" | "other";
+    sdk: "anthropic" | "openai" | "gemini";
+    provider: string;
     base_url?: string;
     model: string;
     temperature?: number;
@@ -235,7 +235,7 @@ export interface ChatRequest {
 }
 
 export interface ModelData {
-    provider: "anthropic" | "openai" | "gemini" | "other",
+    provider: string,
     model: string,
     modelCapabilities: ModelCapabilities
 }
@@ -262,8 +262,11 @@ export interface ModelCapabilities {
     thinking: boolean;
     minThinkingTokens?: number;
     maxThinkingTokens?: number;
-    createdAt?: string;
+    baseUrl?: string;
+    sdk: "anthropic" | "openai" | "gemini";
+    apiKeyName: `${string}_API_KEY`;
 }
+
 
 export interface ModelsResponse {
     models: {

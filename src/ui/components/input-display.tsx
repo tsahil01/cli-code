@@ -14,14 +14,14 @@ interface InputDisplayProps {
 }
 
 const LoadingIndicator = () => {
-	const [frame, setFrame] = React.useState(0);
-	const frames = ['◜', '◠', '◝', '◞', '◡', '◟'];
+	const [frame, setFrame] = useState(0);
+	const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
-	React.useEffect(() => {
-		const timer = setInterval(() => {
-			setFrame(f => (f + 1) % frames.length);
-		}, 100);
-		return () => clearInterval(timer);
+	useEffect(() => {
+		const interval = setInterval(() => {
+			setFrame(prev => (prev + 1) % frames.length);
+		}, 80);
+		return () => clearInterval(interval);
 	}, []);
 
 	return <Text color="cyan">{frames[frame]}</Text>;
@@ -50,6 +50,13 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 
 	const getToolName = (toolCall: FunctionCall) => {
 		return (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function.name || null;
+	};
+
+	const getPlaceholderText = () => {
+		if (!currentModel) {
+			return "Type /model to select a model first...";
+		}
+		return "Ask me anything...";
 	};
 
 	return (
@@ -87,7 +94,7 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 									}
 									return <Text key={index} color="white">{part}</Text>;
 								});
-							})() : <Text color="gray">Ask me anything...</Text>}
+							})() : <Text color={!currentModel ? "yellow" : "gray"}>{getPlaceholderText()}</Text>}
 						</Text>
 					</Box>
 				)}
