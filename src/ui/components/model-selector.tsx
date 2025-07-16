@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { ModelCapabilities } from '../../types.js';
+import { ModelCapabilities, ConfigFormat } from '../../types.js';
 import { getAvailableModels } from '../../lib/models.js';
+import { readConfigFile } from '../../lib/configMngt.js';
 
 interface ModelSelectorProps {
     onSelect: (model: ModelCapabilities) => void;
@@ -14,6 +15,7 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [config, setConfig] = useState<ConfigFormat | null>(null);
 
     useEffect(() => {
         loadModels();
@@ -23,11 +25,16 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
         try {
             setIsLoading(true);
             setError(null);
-            const models = await getAvailableModels();
+            const [models, configData] = await Promise.all([
+                getAvailableModels(),
+                readConfigFile()
+            ]);
+            
             setAvailableModels(models);
+            setConfig(configData);
             
             if (models.length === 0) {
-                setError('No models available. Please check your API keys in settings.');
+                setError('No models available from the backend.');
             } else {
                 if (currentModel) {
                     const currentIndex = models.findIndex(m => 
@@ -44,6 +51,28 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
             console.error('Error loading models:', err);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const hasApiKey = (model: ModelCapabilities): boolean => {
+        if (!config) return false;
+        const apiKey = config[model.apiKeyName as keyof ConfigFormat];
+        return !!apiKey;
+    };
+
+    const getStatusIndicator = (model: ModelCapabilities): string => {
+        if (hasApiKey(model)) {
+            return '✓';
+        } else {
+            return '⚠';
+        }
+    };
+
+    const getStatusColor = (model: ModelCapabilities): string => {
+        if (hasApiKey(model)) {
+            return 'green';
+        } else {
+            return 'yellow';
         }
     };
 
@@ -85,7 +114,7 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
                     paddingY={1}
                 >
                     <Text bold color="yellow">/model</Text>
-                    <Text color="cyan">🔄 Loading available models...</Text>
+                    <Text color="cyan">Loading available models...</Text>
                 </Box>
             </Box>
         );
@@ -136,9 +165,13 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
                             <Text color={isSelected ? "cyan" : "white"}>
                                 {isSelected ? "► " : "  "}
                                 {isCurrent ? "● " : "○ "}
+                                <Text color={getStatusColor(model)}>{getStatusIndicator(model)} </Text>
                                 <Text color={isSelected ? "cyan" : "white"} bold={isSelected}>
                                     {model.displayName}
                                 </Text>
+                                {!hasApiKey(model) && (
+                                    <Text color="yellow"> (setup required)</Text>
+                                )}
                             </Text>
                             {isSelected && (
                                 <Box marginLeft={6} flexDirection="column">
@@ -156,6 +189,11 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
                                             Thinking: {model.minThinkingTokens?.toLocaleString() || 0}-{model.maxThinkingTokens?.toLocaleString() || 0} tokens
                                         </Text>
                                     )}
+                                    {!hasApiKey(model) && (
+                                        <Text color="yellow">
+                                            ⚠ API key required - will prompt for setup
+                                        </Text>
+                                    )}
                                 </Box>
                             )}
                         </Box>
@@ -167,6 +205,12 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
                     {availableModels.length > 0 && (
                         <Text color="dim"> • Ctrl+R refresh</Text>
                     )}
+                </Box>
+                
+                <Box marginTop={1}>
+                    <Text color="dim">
+                        Legend: <Text color="green">✓ Ready</Text> • <Text color="yellow">⚠ Setup required</Text>
+                    </Text>
                 </Box>
             </Box>
         </Box>
