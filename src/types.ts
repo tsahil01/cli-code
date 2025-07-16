@@ -114,9 +114,8 @@ export interface ConfigFormat {
     user?: UserData;
     acceptAllToolCalls?: boolean;
     plan: Plan;
-    ANTHROPIC_API_KEY?: string;
-    GEMINI_API_KEY?: string;
     selectedModel?: ModelData;
+    [key: `${string}_API_KEY`]: string | undefined;
 }
 
 
@@ -262,8 +261,11 @@ export interface ModelCapabilities {
     thinking: boolean;
     minThinkingTokens?: number;
     maxThinkingTokens?: number;
-    createdAt?: string;
+    baseUrl?: string;
+    sdk: "anthropic" | "openai" | "gemini";
+    apiKeyName: `${string}_API_KEY`;
 }
+
 
 export interface ModelsResponse {
     models: {
