@@ -224,7 +224,8 @@ export interface ChatError {
 
 export interface ChatRequest {
     messages: Message[];
-    provider: "openai" | "anthropic" | "gemini" | "other";
+    sdk: "anthropic" | "openai" | "gemini";
+    provider: string;
     base_url?: string;
     model: string;
     temperature?: number;
@@ -234,7 +235,7 @@ export interface ChatRequest {
 }
 
 export interface ModelData {
-    provider: "anthropic" | "openai" | "gemini" | "other",
+    provider: string,
     model: string,
     modelCapabilities: ModelCapabilities
 }
