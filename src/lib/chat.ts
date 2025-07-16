@@ -36,15 +36,13 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         
         let apiKey = data.apiKey;
         if (!apiKey) {
-            if (data.provider === 'anthropic') {
-                apiKey = config.ANTHROPIC_API_KEY;
-            } else if (data.provider === 'gemini') {
-                apiKey = config.GEMINI_API_KEY;
-            }
+            const apiKeyName = `${data.provider.toUpperCase()}_API_KEY` as `${string}_API_KEY`;
+            apiKey = config[apiKeyName];
         }
 
         const requestBody = {
             messages,
+            sdk: data.sdk,
             provider: data.provider,
             base_url: data.base_url,
             model: data.model,
