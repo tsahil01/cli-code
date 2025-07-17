@@ -140,17 +140,30 @@ export function Agent() {
         const toolCallId = generateToolCallId(toolCall);
 
         setToolCallHistory(prev => {
-            const updated = [
-                ...prev,
-                {
-                    id: toolCallId,
-                    name: toolName,
+            const existingIndex = prev.findIndex(call => call.id === toolCallId);
+            
+            if (existingIndex !== -1) {
+                const updated = [...prev];
+                updated[existingIndex] = {
+                    ...updated[existingIndex],
                     status,
                     timestamp: Date.now(),
                     errorMessage
-                }
-            ];
-            return updated.slice(-10);
+                };
+                return updated.slice(-10);
+            } else {
+                const updated = [
+                    ...prev,
+                    {
+                        id: toolCallId,
+                        name: toolName,
+                        status,
+                        timestamp: Date.now(),
+                        errorMessage
+                    }
+                ];
+                return updated.slice(-10);
+            }
         });
     };
 
