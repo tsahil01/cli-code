@@ -17,7 +17,7 @@ const ERROR_MESSAGES = {
     unknown: 'An unexpected error occurred.'
 };
 
-export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCallback: (thinking: string) => void, contentCallback: (content: string) => void, toolCallCallback: (toolCall: FunctionCall[]) => void, finalCallback: (content: string, metadata: any) => void, doneCallback: (metadata: any) => void) {
+export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCallback: (thinking: string) => void, contentCallback: (content: string) => void, toolCallCallback: (toolCall: FunctionCall[]) => void, finalCallback: (content: string, metadata: MessageMetadata) => void, doneCallback: (metadata: any) => void) {
     if (retryCount > 1) {
         console.error("Max retries reached for chat. Kindly login again.");
         return {
@@ -33,7 +33,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         }
 
         let messages = data.messages;
-        
+
         let apiKey = data.apiKey;
         if (!apiKey) {
             const apiKeyName = `${data.provider.toUpperCase()}_API_KEY` as `${string}_API_KEY`;
@@ -155,24 +155,36 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                             break;
 
                         case 'final':
-                            const metadata: MessageMetadata = {
-                                thinkingContent: event.summary?.thinking || '',
+                            const sdk = event.sdk;
+                            const thinkingContent = event.summary?.thinking || '';
+                            const finishReason = event.finishReason;
+                            const usageMetadata = event.usageMetadata;
 
-                                thinkingSignature: event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || event.summary?.toolCalls[0]?.thoughtSignature || event.summary?.content[0]?.thoughtSignature || "",
+                            let thinkingSignature;
+                            let toolCalls;
 
-                                toolCalls: event.fullMessage?.content?.filter((c: any) => c.type === 'tool_use') || event.summary?.toolCalls?.map((c: any) => c.functionCall) || event.summary?.toolCalls || [],
+                            if (sdk === 'anthropic') {
+                                thinkingSignature = event.fullMessage?.content?.find((c: any) => c.type === 'thinking')?.signature || "";
+                                toolCalls = event.fullMessage?.content?.filter((c: any) => c.type === 'tool_use') || [];
+                            } else if (sdk === "gemini") {
+                                thinkingSignature = event.summary?.toolCalls[0]?.thoughtSignature ||
+                                event.summary?.content[0]?.thoughtSignature ||
+                                "";
+                                toolCalls = event.summary?.toolCalls?.map((c: any) => c.functionCall) || [];
+                            } else if (sdk === "openai") {
+                                toolCalls =  event.summary?.toolCalls || [];
+                            }
 
-                                finishReason: event.finishReason,
-
-                                usageMetadata: event.usageMetadata
+                            let metadata: MessageMetadata = {
+                                // sdk, 
+                                thinkingContent,
+                                thinkingSignature,
+                                toolCalls,
+                                finishReason,
+                                usageMetadata
                             };
 
-                            const textContent = event.fullMessage?.content
-                                ?.filter((c: any) => c.type === 'text')
-                                ?.map((c: any) => c.text)
-                                ?.join('') || '';
-
-                            const finalContent = textContent || extractResponse(accumulatedContent);
+                            const finalContent = extractResponse(accumulatedContent);
                             finalCallback(finalContent, metadata);
                             break;
 
