@@ -49,7 +49,7 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 	}, []);
 
 	const getToolName = (toolCall: FunctionCall) => {
-		return (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function.name || null;
+		return (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function?.name || null;
 	};
 
 	const getPlaceholderText = () => {
