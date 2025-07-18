@@ -24,8 +24,9 @@ export interface GeminiFunctionCall {
 }
 
 export interface OpenAIFunctionCall {
-    type: 'function';
+    index: number;
     id: string;
+    type: 'function';
     function: {
         name: string;
         arguments?: Record<string, any>;
@@ -35,6 +36,7 @@ export interface OpenAIFunctionCall {
 export type FunctionCall = AnthropicFunctionCall | GeminiFunctionCall | OpenAIFunctionCall;
 
 export interface MessageMetadata {
+    // sdk: 'anthropic' | 'openai' | 'gemini';
     thinkingContent?: string;
     thinkingSignature?: string;
     toolCalls?: FunctionCall[];
