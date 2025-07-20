@@ -44,13 +44,15 @@ export function Agent() {
                 if (config.selectedModel && availableModels.length > 0) {
                     const savedModel = availableModels.find(m => 
                         m.provider === config.selectedModel?.provider && 
-                        m.modelName === config.selectedModel?.model
+                        m.modelName === config.selectedModel?.model &&
+                        m.sdk === config.selectedModel.sdk
                     );
                     
                     if (savedModel) {
                         setModelData({
                             provider: savedModel.provider,
                             model: savedModel.modelName,
+                            sdk: savedModel.sdk,
                             modelCapabilities: savedModel
                         });
                     } else if (availableModels.length > 0) {
@@ -434,6 +436,7 @@ export function Agent() {
         setModelData({
             provider: model.provider,
             model: model.modelName,
+            sdk: model.sdk,
             modelCapabilities: model
         });
         
@@ -441,7 +444,8 @@ export function Agent() {
             await appendConfigFile({ 
                 selectedModel: {
                     provider: model.provider,
-                    model: model.modelName
+                    model: model.modelName,
+                    sdk: model.sdk
                 }
             });
         } catch (error) {

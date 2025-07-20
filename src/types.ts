@@ -239,6 +239,7 @@ export interface ChatRequest {
 export interface ModelData {
     provider: string,
     model: string,
+    sdk: string,
     modelCapabilities: ModelCapabilities
 }
 
