@@ -124,7 +124,13 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
                     setShowModelSelector(false);
                     onClose();
                 }}
-                currentModel={currentModel || undefined}
+                currentModel={
+                    currentModel ? {
+                        provider: currentModel.provider,
+                        model: currentModel.model,
+                        sdk: currentModel.sdk
+                    } : undefined
+                }
             />
         );
     }

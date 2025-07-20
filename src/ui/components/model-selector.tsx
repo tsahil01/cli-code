@@ -7,7 +7,7 @@ import { readConfigFile } from '../../lib/configMngt.js';
 interface ModelSelectorProps {
     onSelect: (model: ModelCapabilities) => void;
     onClose: () => void;
-    currentModel?: { provider: string; model: string };
+    currentModel?: { provider: string; model: string; sdk: string };
 }
 
 export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelectorProps) => {
@@ -39,7 +39,8 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
                 if (currentModel) {
                     const currentIndex = models.findIndex(m => 
                         m.provider === currentModel.provider && 
-                        m.modelName === currentModel.model
+                        m.modelName === currentModel.model &&
+                        m.sdk === currentModel.sdk
                     );
                     if (currentIndex >= 0) {
                         setSelectedIndex(currentIndex);
@@ -161,7 +162,7 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
                         model.modelName === currentModel.model;
                     
                     return (
-                        <Box key={`${model.provider}-${model.modelName}`} marginBottom={0}>
+                        <Box key={`${model.provider}-${model.modelName}-${model.sdk}`} marginBottom={0}>
                             <Text color={isSelected ? "cyan" : "white"}>
                                 {isSelected ? "► " : "  "}
                                 {isCurrent ? "● " : "○ "}
