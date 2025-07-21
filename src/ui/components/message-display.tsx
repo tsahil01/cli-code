@@ -69,6 +69,12 @@ export const MessageDisplay = ({
                                             dimmed={true}
                                         />
                                     )}
+                                    {(!message.content || message.content.length === 0) && !message.metadata?.thinkingContent && message.metadata?.toolCalls && (
+                                        <MarkdownRenderer
+                                            content={`Running tool calls...`}
+                                            dimmed={true}
+                                        />
+                                    )}
                                 </Box>
                             </>
                         )}
