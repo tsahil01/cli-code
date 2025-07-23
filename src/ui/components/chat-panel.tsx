@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Message, FunctionCall, ToolCallStatus, ModelData, Plan, SelectedFile } from '../../types.js';
-import { MessageDisplay } from './message-display.js';
+import { MessageHistory, StreamingLine } from './message-display.js';
 import { PendingToolCallDialog } from './pending-tool-call-dialog.js';
 import { ToolStatusDisplay } from './index.js';
 import { ChatInput } from './index.js';
@@ -40,12 +40,14 @@ export const ChatPanel = memo(function ChatPanel({
 }: ChatPanelProps) {
     return (
         <>
-            <MessageDisplay
+            <MessageHistory
                 messages={messages}
+                noMargin={noMargin}
+            />
+            <StreamingLine
                 thinking={thinking}
                 currentContent={currentContent}
                 isProcessing={isProcessing}
-                noMargin={noMargin}
             />
             <PendingToolCallDialog
                 pendingToolCall={pendingToolCall}
