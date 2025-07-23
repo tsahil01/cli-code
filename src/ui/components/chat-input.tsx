@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Box, Text } from "ink";
 import { FileSelector } from "./file-selector.js";
 import { CommandSuggestions } from "./command-suggestions.js";
@@ -17,7 +17,7 @@ interface ChatInputProps {
 	plan: Plan;
 	}
 
-export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel, plan }: ChatInputProps) => {
+export const ChatInput = memo(function ChatInput({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel, plan }: ChatInputProps) {
 	const {
 		input,
 		showFileSelector,
@@ -55,4 +55,4 @@ export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentT
 			<AttachedFiles files={selectedFiles} />
 		</Box>
 	);
-};
+});
