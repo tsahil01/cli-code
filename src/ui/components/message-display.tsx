@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, Text } from 'ink';
 import { MarkdownRenderer } from './markdown-renderer.js';
 import { Message } from '../../types.js';
@@ -8,6 +8,7 @@ interface MessageDisplayProps {
     thinking?: string;
     currentContent?: string;
     isProcessing?: boolean;
+    noMargin?: boolean;
 }
 
 const LoadingIndicator = () => {
@@ -24,19 +25,20 @@ const LoadingIndicator = () => {
     return <Text color="cyan">{frames[frame]}</Text>;
 };
 
-export const MessageDisplay = ({
+export const MessageDisplay = memo(function MessageDisplay({
     messages,
     thinking,
     currentContent,
     isProcessing,
-}: MessageDisplayProps) => {
+    noMargin = false,
+}: MessageDisplayProps) {
 
     if (messages.length === 0 && !isProcessing) {
         return null;
     }
 
     return (
-        <Box flexDirection="column" marginY={1}>
+        <Box flexDirection="column" {...(!noMargin ? {marginY: 1} : {})}>
             {messages.filter(msg => !msg.ignoreInDisplay).map((message, index) => {
                 const filteredMessages = messages.filter(msg => !msg.ignoreInDisplay);
                 const isFirstInGroup = index === 0 || filteredMessages[index - 1].role !== message.role;
@@ -54,7 +56,8 @@ export const MessageDisplay = ({
                                 {`> ${message.content}`}
                             </Text>
                         ) : (
-                            <><Text color={message.role === 'user' ? "cyan" : "magenta"}>┃ </Text>
+                            <>
+                                <Text color={message.role === 'user' ? "cyan" : "magenta"}>┃ </Text>
 
                                 <Box paddingX={1}>
                                     {message.content && message.content.length > 0 && (
@@ -123,4 +126,4 @@ export const MessageDisplay = ({
             )}
         </Box>
     );
-}; 
+}); 

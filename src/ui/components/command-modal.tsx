@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { Command, CommandOption, ModelCapabilities, ModelData } from '../../types';
 import { SettingsEditor } from './settings-editor.js';
@@ -16,7 +16,7 @@ interface OptionState {
     [key: string]: any;
 }
 
-export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: CommandModalProps) => {
+export const CommandModal = memo(function CommandModal({ command, onClose, onModelSelect, currentModel }: CommandModalProps) {
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
     const [optionValues, setOptionValues] = useState<OptionState>({});
     const [isConfirming, setIsConfirming] = useState(false);
@@ -266,4 +266,4 @@ export const CommandModal = ({ command, onClose, onModelSelect, currentModel }: 
             </Box>
         </Box>
     );
-}; 
+}); 
