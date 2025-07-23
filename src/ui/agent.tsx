@@ -1,20 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Header, ChatInput, ToolStatusDisplay } from "./components/index.js";
-import { Command, SelectedFile, Message, ChatRequest, FunctionCall, Plan } from "../types.js";
-import { MessageDisplay } from './components/message-display.js';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Header } from "./components/index.js";
+import { Command, SelectedFile, Message, Plan } from "../types.js";
 import { CommandModal } from './components/command-modal.js';
-import { useInput } from 'ink';
+import { useInput, Box } from 'ink';
 import { systemCmds } from '../lib/systemCmds.js';
-import { chat } from '../lib/chat.js';
 import { readConfigFile, appendConfigFile } from '../lib/configMngt.js';
 import { getAvailableModels } from '../lib/models.js';
 import { useToolCall } from '../hooks/useToolCall.js';
 import { useModelSelection } from '../hooks/useModelSelection.js';
 import { usePlan } from '../hooks/usePlan.js';
-import { PendingToolCallDialog } from './components/pending-tool-call-dialog.js';
 import { PlanDialogWrapper } from './components/plan-dialog-wrapper.js';
 import { ApiKeyPromptWrapper } from './components/api-key-prompt-wrapper.js';
 import { useChat } from '../hooks/useChat.js';
+import { ChatPanel } from './components/chat-panel.js';
 
 export function Agent() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -37,7 +35,17 @@ export function Agent() {
         setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall: toolCall.setCurrentToolCall, modelData: model.modelData, plan: plan.plan, handleToolCall: toolCall.handleToolCall
     });
 
-    const onSend = async (message: string, files: SelectedFile[]) => {
+    const handleCommandModalClose = useCallback(() => setActiveCommand(null), []);
+    const handlePlanDialogClose = useCallback(() => setShowPlanDialog(false), []);
+    const handlePlanSave = useCallback(async (newPlan: Plan) => {
+        plan.setPlan(newPlan);
+        await appendConfigFile({ plan: newPlan });
+        setShowPlanDialog(false);
+    }, [plan]);
+    const handleApiKeyPromptComplete = useCallback(model.handleApiKeyPromptComplete, [model]);
+    const handleApiKeyPromptCancel = useCallback(model.handleApiKeyPromptCancel, [model]);
+    const handleModelSelect = useCallback(model.handleModelSelect, [model]);
+    const onSend = useCallback(async (message: string, files: SelectedFile[]) => {
         if (message.startsWith("/")) {
             const commandName = message.slice(1);
             const command = systemCmds.find(cmd => cmd.name === commandName);
@@ -53,7 +61,7 @@ export function Agent() {
             }
         }
         chat.handleNewMsgSend(message, files);
-    };
+    }, [chat]);
     const activeCommandRef = useRef(activeCommand);
     const showPlanDialogRef = useRef(showPlanDialog);
     useEffect(() => { activeCommandRef.current = activeCommand; }, [activeCommand]);
@@ -134,47 +142,47 @@ export function Agent() {
 
     return (
         <>
-            <Header />
-            <MessageDisplay
-                messages={messages}
-                thinking={thinking}
-                currentContent={content}
-                isProcessing={isProcessing}
-            />
-            <PendingToolCallDialog
-                pendingToolCall={toolCall.pendingToolCall}
-                handleToolConfirmation={toolCall.handleToolConfirmation}
-            />
-            <ToolStatusDisplay toolCalls={toolCall.toolCallHistory} />
-            <ChatInput
-                onSend={onSend}
-                commands={systemCmds}
-                isProcessing={isProcessing}
-                isDisabled={!!activeCommand || !!toolCall.pendingToolCall || showPlanDialog || model.showApiKeyPrompt}
-                currentToolCall={toolCall.currentToolCall}
-                currentModel={model.modelData}
-                plan={plan.plan}
-            />
-            {activeCommand && (
-                <CommandModal
-                    command={activeCommand}
-                    onClose={() => setActiveCommand(null)}
-                    onModelSelect={model.handleModelSelect}
-                    currentModel={model.modelData}
-                />
-            )}
-            <PlanDialogWrapper
-                plan={plan.plan}
-                setPlan={plan.setPlan}
-                showPlanDialog={showPlanDialog}
-                setShowPlanDialog={setShowPlanDialog}
-            />
-            <ApiKeyPromptWrapper
-                showApiKeyPrompt={model.showApiKeyPrompt}
-                pendingModel={model.pendingModel}
-                handleApiKeyPromptComplete={model.handleApiKeyPromptComplete}
-                handleApiKeyPromptCancel={model.handleApiKeyPromptCancel}
-            />
+            <Box flexDirection="column" width="100%" height="100%">
+                <Header />
+                <Box flexDirection="column" gap={1} width="100%" flexGrow={1} minHeight={0}>
+                    <ChatPanel
+                        messages={messages}
+                        thinking={thinking}
+                        currentContent={content}
+                        isProcessing={isProcessing}
+                        noMargin
+                        pendingToolCall={toolCall.pendingToolCall}
+                        handleToolConfirmation={toolCall.handleToolConfirmation}
+                        toolCallHistory={toolCall.toolCallHistory}
+                        onSend={onSend}
+                        commands={systemCmds}
+                        isDisabled={!!activeCommand || !!toolCall.pendingToolCall || showPlanDialog || model.showApiKeyPrompt}
+                        currentToolCall={toolCall.currentToolCall}
+                        currentModel={model.modelData}
+                        plan={plan.plan}
+                    />
+                    {activeCommand && (
+                        <CommandModal
+                            command={activeCommand}
+                            onClose={handleCommandModalClose}
+                            onModelSelect={handleModelSelect}
+                            currentModel={model.modelData}
+                        />
+                    )}
+                    <PlanDialogWrapper
+                        plan={plan.plan}
+                        setPlan={plan.setPlan}
+                        showPlanDialog={showPlanDialog}
+                        setShowPlanDialog={setShowPlanDialog}
+                    />
+                    <ApiKeyPromptWrapper
+                        showApiKeyPrompt={model.showApiKeyPrompt}
+                        pendingModel={model.pendingModel}
+                        handleApiKeyPromptComplete={handleApiKeyPromptComplete}
+                        handleApiKeyPromptCancel={handleApiKeyPromptCancel}
+                    />
+                </Box>
+            </Box>
         </>
     );
 }
