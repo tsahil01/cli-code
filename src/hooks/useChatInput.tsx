@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useInput } from "ink";
 import clipboardy from "clipboardy";
-import { SelectedFile, Command } from "../../types.js";
+import { SelectedFile, Command } from "../types.js";
 import path from "path";
 
 interface UseChatInputProps {
