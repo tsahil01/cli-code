@@ -11,39 +11,15 @@ interface MessageDisplayProps {
     noMargin?: boolean;
 }
 
-const LoadingIndicator = () => {
-    const [frame, setFrame] = React.useState(0);
-    const frames = ['◜', '◠', '◝', '◞', '◡', '◟'];
-
-    React.useEffect(() => {
-        const timer = setInterval(() => {
-            setFrame(f => (f + 1) % frames.length);
-        }, 100);
-        return () => clearInterval(timer);
-    }, []);
-
-    return <Text color="cyan">{frames[frame]}</Text>;
-};
-
-export const MessageDisplay = memo(function MessageDisplay({
-    messages,
-    thinking,
-    currentContent,
-    isProcessing,
-    noMargin = false,
-}: MessageDisplayProps) {
-
-    if (messages.length === 0 && !isProcessing) {
+export const MessageHistory = memo(function MessageHistory({ messages, noMargin = false }: { messages: Message[]; noMargin?: boolean }) {
+    if (messages.length === 0) {
         return null;
     }
-
     return (
         <Box flexDirection="column" {...(!noMargin ? {marginY: 1} : {})}>
-            {messages.filter(msg => !msg.ignoreInDisplay).map((message, index) => {
-                const filteredMessages = messages.filter(msg => !msg.ignoreInDisplay);
+            {messages.filter(msg => !msg.ignoreInDisplay).map((message, index, filteredMessages) => {
                 const isFirstInGroup = index === 0 || filteredMessages[index - 1].role !== message.role;
                 const isLastInGroup = index === filteredMessages.length - 1 || filteredMessages[index + 1].role !== message.role;
-
                 return (
                     <Box
                         key={index}
@@ -58,7 +34,6 @@ export const MessageDisplay = memo(function MessageDisplay({
                         ) : (
                             <>
                                 <Text color={message.role === 'user' ? "cyan" : "magenta"}>┃ </Text>
-
                                 <Box paddingX={1}>
                                     {message.content && message.content.length > 0 && (
                                         <MarkdownRenderer
@@ -84,46 +59,54 @@ export const MessageDisplay = memo(function MessageDisplay({
                     </Box>
                 );
             })}
+        </Box>
+    );
+});
 
-            {isProcessing && (
-                <Box flexDirection="column">
-                    <Box flexDirection="row">
-                        <Text color="magenta">┃ </Text>
-                        <Box paddingX={1} flexDirection="column">
-                            <LoadingIndicator />
-                        </Box>
+export const StreamingLine = memo(function StreamingLine({ thinking, currentContent, isProcessing }: { thinking?: string; currentContent?: string; isProcessing?: boolean }) {
+    if (!isProcessing && !thinking && !currentContent) return null;
+    return (
+        <Box flexDirection="column">
+            <Box flexDirection="row">
+                <Text color="magenta">┃ </Text>
+                <Box paddingX={1} flexDirection="column">
+                </Box>
+            </Box>
+            {thinking && (!currentContent || currentContent.length === 0) && (
+                <Box flexDirection="row">
+                    <Text color="magenta">┃ </Text>
+                    <Box paddingX={1} flexDirection="column">
+                        <Text color="cyan" bold>{"Thinking: \n"}</Text>
+                        <MarkdownRenderer
+                            content={thinking}
+                            baseColor="white"
+                            dimmed={true}
+                        />
                     </Box>
-
-
-                    {thinking && (currentContent?.length === 0 || !currentContent) && (
-                        <Box flexDirection="row">
-                            <Text color="magenta">┃ </Text>
-                            <Box paddingX={1} flexDirection="column">
-                                <Text color="cyan" bold>{"Thinking: \n"}</Text>
-                                <MarkdownRenderer
-                                    content={thinking}
-                                    baseColor="white"
-                                    dimmed={true}
-                                />
-                            </Box>
-                        </Box>
-                    )}
-
-                    {currentContent && currentContent.length > 0 && (
-                        <Box flexDirection="row">
-                            <Text color="magenta">┃ </Text>
-                            <Box paddingX={1} flexDirection="column">
-                                <Text color="cyan" bold>{"Drafting: \n"}</Text>
-                                <MarkdownRenderer
-                                    content={currentContent}
-                                    baseColor="white"
-                                    dimmed={false}
-                                />
-                            </Box>
-                        </Box>
-                    )}
+                </Box>
+            )}
+            {currentContent && currentContent.length > 0 && (
+                <Box flexDirection="row">
+                    <Text color="magenta">┃ </Text>
+                    <Box paddingX={1} flexDirection="column">
+                        <Text color="cyan" bold>{"Drafting: \n"}</Text>
+                        <MarkdownRenderer
+                            content={currentContent}
+                            baseColor="white"
+                            dimmed={false}
+                        />
+                    </Box>
                 </Box>
             )}
         </Box>
+    );
+});
+
+export const MessageDisplay = memo(function MessageDisplay({ messages, thinking, currentContent, isProcessing, noMargin = false }: MessageDisplayProps) {
+    return (
+        <>
+            <MessageHistory messages={messages} noMargin={noMargin} />
+            <StreamingLine thinking={thinking} currentContent={currentContent} isProcessing={isProcessing} />
+        </>
     );
 }); 
