@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header, ChatInput, ToolStatusDisplay } from "./components/index.js";
 import { Command, SelectedFile, Message, ChatRequest, FunctionCall, Plan } from "../types.js";
 import { MessageDisplay } from './components/message-display.js';
@@ -14,6 +14,7 @@ import { usePlan } from '../hooks/usePlan.js';
 import { PendingToolCallDialog } from './components/pending-tool-call-dialog.js';
 import { PlanDialogWrapper } from './components/plan-dialog-wrapper.js';
 import { ApiKeyPromptWrapper } from './components/api-key-prompt-wrapper.js';
+import { useChat } from '../hooks/useChat.js';
 
 export function Agent() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -21,77 +22,52 @@ export function Agent() {
     const [thinking, setThinking] = useState<string>('');
     const [content, setContent] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
+    const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
+    const onToolCallComplete = (msgs: Message[]) => {
+        chat.handleSend(msgs);
+    };
 
-    const {
-        plan,
-        setPlan,
-        showPlanDialog,
-        setShowPlanDialog,
-    } = usePlan();
+    const plan = usePlan();
+    const model = useModelSelection({ setMessages });
+    const toolCall = useToolCall({
+        setMessages, setIsProcessing, onToolCallComplete
+    });
 
-    const {
-        modelData,
-        setModelData,
-        showApiKeyPrompt,
-        setShowApiKeyPrompt,
-        pendingModel,
-        setPendingModel,
-        handleModelSelect,
-        handleApiKeyPromptComplete,
-        handleApiKeyPromptCancel,
-    } = useModelSelection({ setMessages });
+    const chat = useChat({
+        setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall: toolCall.setCurrentToolCall, modelData: model.modelData, plan: plan.plan, handleToolCall: toolCall.handleToolCall
+    });
 
-    const handleSend = async (msgs: Message[]) => {
-        setIsProcessing(true);
-        setThinking('');
-        setContent('');
-
-        try {
-            if (!modelData) {
+    const onSend = async (message: string, files: SelectedFile[]) => {
+        if (message.startsWith("/")) {
+            const commandName = message.slice(1);
+            const command = systemCmds.find(cmd => cmd.name === commandName);
+            if (command) {
+                if (command.name === 'exit') {
+                    process.exit(0);
+                } else if (command.name === 'mode') {
+                    setShowPlanDialog(true);
+                } else {
+                    setActiveCommand(command);
+                }
                 return;
             }
-            const chatRequest: ChatRequest = {
-                messages: msgs,
-                sdk: modelData?.modelCapabilities.sdk,
-                provider: modelData?.provider,
-                model: modelData?.model,
-                plan: plan
-            };
-
-            await handleChatEndpoint(chatRequest);
-
-        } catch (error) {
-            setMessages(prev => [...prev, {
-                content: `Error: ${error instanceof Error ? error.message : 'An unknown error occurred'}`,
-                role: 'system',
-                ignoreInLLM: true
-            }]);
-            setIsProcessing(false);
-            setThinking('');
-            setContent('');
-            setCurrentToolCall(null);
         }
-    }
-    const {
-        pendingToolCall,
-        setPendingToolCall,
-        currentToolCall,
-        setCurrentToolCall,
-        toolCallHistory,
-        addToolCallStatus,
-        handleToolCall,
-        handleToolConfirmation,
-    } = useToolCall({ setMessages, handleSend, setIsProcessing });
+        chat.handleNewMsgSend(message, files);
+    };
+    const activeCommandRef = useRef(activeCommand);
+    const showPlanDialogRef = useRef(showPlanDialog);
+    useEffect(() => { activeCommandRef.current = activeCommand; }, [activeCommand]);
+    useEffect(() => { showPlanDialogRef.current = showPlanDialog; }, [showPlanDialog]);
 
     useEffect(() => {
         const loadConfigAndModels = async () => {
             try {
                 const config = await readConfigFile();
                 if (config.plan) {
-                    setPlan(config.plan);
+                    plan.setPlan(config.plan);
                 } else {
                     const defaultPlan: Plan = { mode: 'lite', addOns: [] };
-                    setPlan(defaultPlan);
+                    plan.setPlan(defaultPlan);
                     await appendConfigFile({ plan: defaultPlan });
                 }
 
@@ -103,7 +79,7 @@ export function Agent() {
                         m.sdk === config.selectedModel.sdk
                     );
                     if (savedModel) {
-                        setModelData({
+                        model.setModelData({
                             provider: savedModel.provider,
                             model: savedModel.modelName,
                             sdk: savedModel.sdk,
@@ -149,98 +125,12 @@ export function Agent() {
     }, []);
 
     useInput((input, key) => {
-        if (key.escape && activeCommand) {
+        if (key.escape && activeCommandRef.current) {
             setActiveCommand(null);
-        } else if (key.escape && showPlanDialog) {
+        } else if (key.escape && showPlanDialogRef.current) {
             setShowPlanDialog(false);
         }
     });
-
-    async function handleChatEndpoint(chatRequest: ChatRequest) {
-        return await chat(
-            chatRequest,
-            0,
-            (thinking) => setThinking(thinking),
-            (content) => setContent(content),
-            (toolCalls: FunctionCall[]) => {
-                if (toolCalls.length > 0) {
-                    setCurrentToolCall(toolCalls[0]);
-                }
-            },
-            async (finalContent, metadata) => {
-                setMessages(prev => [...prev, {
-                    content: finalContent,
-                    role: 'assistant',
-                    metadata: {
-                        thinkingContent: metadata.thinkingContent,
-                        thinkingSignature: metadata.thinkingSignature,
-                        toolCalls: metadata.toolCalls || []
-                    }
-                }]);
-                if (metadata.toolCalls && metadata.toolCalls.length > 0) {
-                    setCurrentToolCall(metadata.toolCalls[0]);
-                    await handleToolCall(metadata.toolCalls[0], metadata);
-                }
-            },
-            () => {
-                setIsProcessing(false);
-                setContent('');
-                setCurrentToolCall(null);
-            }
-        );
-    }
-
-    const handleNewMsgSend = async (message: string, files: SelectedFile[]) => {
-        if (message.startsWith("/")) {
-            const commandName = message.slice(1);
-            const command = systemCmds.find(cmd => cmd.name === commandName);
-            if (command) {
-                if (command.name === 'exit') {
-                    process.exit(0);
-                } else if (command.name === 'mode') {
-                    setShowPlanDialog(true);
-                } else {
-                    setActiveCommand(command);
-                }
-                return;
-            }
-        }
-        const userMessage = files.length > 0
-            ? message + `\n\n\nI have attached files for your reference: ${files.map(f => f.path).join(", ")}.`
-            : message;
-        setIsProcessing(true);
-        setThinking('');
-        setContent('');
-        setMessages(prev => {
-            const updatedMessages = [...prev, { content: userMessage, role: 'user' as const }];
-            setTimeout(async () => {
-                if (!modelData) {
-                    return;
-                }
-                try {
-                    const chatRequest: ChatRequest = {
-                        messages: updatedMessages,
-                        sdk: modelData?.modelCapabilities.sdk,
-                        provider: modelData?.provider,
-                        model: modelData?.model,
-                        plan: plan
-                    };
-                    await handleSend(updatedMessages);
-                } catch (error) {
-                    setMessages(prev => [...prev, {
-                        content: `Error: ${error instanceof Error ? error.message : 'An unknown error occurred'}`,
-                        role: 'system',
-                        ignoreInLLM: true
-                    }]);
-                    setIsProcessing(false);
-                    setThinking('');
-                    setContent('');
-                    setCurrentToolCall(null);
-                }
-            }, 0);
-            return updatedMessages;
-        });
-    }
 
     return (
         <>
@@ -252,38 +142,38 @@ export function Agent() {
                 isProcessing={isProcessing}
             />
             <PendingToolCallDialog
-                pendingToolCall={pendingToolCall}
-                handleToolConfirmation={handleToolConfirmation}
+                pendingToolCall={toolCall.pendingToolCall}
+                handleToolConfirmation={toolCall.handleToolConfirmation}
             />
-            <ToolStatusDisplay toolCalls={toolCallHistory} />
+            <ToolStatusDisplay toolCalls={toolCall.toolCallHistory} />
             <ChatInput
-                onSend={handleNewMsgSend}
+                onSend={onSend}
                 commands={systemCmds}
                 isProcessing={isProcessing}
-                isDisabled={!!activeCommand || !!pendingToolCall || showPlanDialog || showApiKeyPrompt}
-                currentToolCall={currentToolCall}
-                currentModel={modelData}
-                plan={plan}
+                isDisabled={!!activeCommand || !!toolCall.pendingToolCall || showPlanDialog || model.showApiKeyPrompt}
+                currentToolCall={toolCall.currentToolCall}
+                currentModel={model.modelData}
+                plan={plan.plan}
             />
             {activeCommand && (
                 <CommandModal
                     command={activeCommand}
                     onClose={() => setActiveCommand(null)}
-                    onModelSelect={handleModelSelect}
-                    currentModel={modelData}
+                    onModelSelect={model.handleModelSelect}
+                    currentModel={model.modelData}
                 />
             )}
             <PlanDialogWrapper
-                plan={plan}
-                setPlan={setPlan}
+                plan={plan.plan}
+                setPlan={plan.setPlan}
                 showPlanDialog={showPlanDialog}
                 setShowPlanDialog={setShowPlanDialog}
             />
             <ApiKeyPromptWrapper
-                showApiKeyPrompt={showApiKeyPrompt}
-                pendingModel={pendingModel}
-                handleApiKeyPromptComplete={handleApiKeyPromptComplete}
-                handleApiKeyPromptCancel={handleApiKeyPromptCancel}
+                showApiKeyPrompt={model.showApiKeyPrompt}
+                pendingModel={model.pendingModel}
+                handleApiKeyPromptComplete={model.handleApiKeyPromptComplete}
+                handleApiKeyPromptCancel={model.handleApiKeyPromptCancel}
             />
         </>
     );
