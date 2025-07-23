@@ -17,8 +17,7 @@ export async function login(refreshToken: string) {
         }
         return null;
     } catch (error) {
-        console.error("Error refreshing tokens:", error);
-        return null;
+        throw error;
     }
 }
 

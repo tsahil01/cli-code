@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { Login } from './login.js';
-import { SmallHeader } from './small-header.js';
 
 interface InitializationProps {
     isLoading: boolean;
@@ -29,7 +28,6 @@ export const Initialization = ({ isLoading, isLoggedIn, onLogin, loginError }: I
     if (isLoading) {
         return (
             <Box flexDirection="column" alignItems="center">
-                <SmallHeader />
                 <Box marginTop={1}>
                     <Loader />
                     <Text color="gray" dimColor> Initializing CLI Code...</Text>

@@ -30,11 +30,12 @@ function UI() {
                     setLoggedIn(true);
                 } else {
                     setLoggedIn(false);
-                    setLoginError('Invalid token. Please try again.');
+                    setLoginError('Invalid token or token expired. Try generating a new token.');
                 }
             } catch (error) {
                 setLoggedIn(false);
-                setLoginError('Authentication failed. Please try again.');
+                setLoginError('Authentication failed. Please try again or generate a new token.');
+                console.error("Error refreshing tokens:", error);
             }
         }
         setInitializing(false);
@@ -50,11 +51,11 @@ function UI() {
                 setLoggedIn(true);
             } else {
                 setLoggedIn(false);
-                setLoginError('Invalid token. Please try again.');
+                setLoginError('Invalid token or token expired. Try generating a new token.');
             }
         } catch (error) {
             setLoggedIn(false);
-            setLoginError('Authentication failed. Please try again.');
+            setLoginError('Authentication failed. Please try again or generate a new token.');
         }
         setInitializing(false);
     };
