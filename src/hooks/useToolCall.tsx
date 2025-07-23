@@ -3,10 +3,10 @@ import { FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunction
 import { runTool } from '../lib/tools.js';
 import { readConfigFile, appendConfigFile } from '../lib/configMngt.js';
 
-export function useToolCall({ setMessages, handleSend, setIsProcessing }: {
+export function useToolCall({ setMessages, setIsProcessing, onToolCallComplete }: {
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-    handleSend: (msgs: Message[]) => Promise<void>,
-    setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>
+    setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>,
+    onToolCallComplete: (msgs: Message[]) => void | Promise<void>
 }) {
     const [pendingToolCall, setPendingToolCall] = useState<FunctionCall | null>(null);
     const [currentToolCall, setCurrentToolCall] = useState<FunctionCall | null>(null);
@@ -91,7 +91,7 @@ export function useToolCall({ setMessages, handleSend, setIsProcessing }: {
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, newMsg];
-                    setTimeout(() => handleSend(updatedMessages), 0);
+                    setTimeout(() => onToolCallComplete(updatedMessages), 0);
                     return updatedMessages;
                 });
             } catch (error) {
@@ -108,7 +108,7 @@ export function useToolCall({ setMessages, handleSend, setIsProcessing }: {
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, errorMsg];
-                    setTimeout(() => handleSend(updatedMessages), 0);
+                    setTimeout(() => onToolCallComplete(updatedMessages), 0);
                     return updatedMessages;
                 });
             } finally {
@@ -138,7 +138,7 @@ export function useToolCall({ setMessages, handleSend, setIsProcessing }: {
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, newMsg];
-                    setTimeout(() => handleSend(updatedMessages), 0);
+                    setTimeout(() => onToolCallComplete(updatedMessages), 0);
                     return updatedMessages;
                 });
             } catch (error) {
@@ -154,7 +154,7 @@ export function useToolCall({ setMessages, handleSend, setIsProcessing }: {
                 }
                 setMessages(prev => {
                     const updatedMessages = [...prev, errorMsg];
-                    setTimeout(() => handleSend(updatedMessages), 0);
+                    setTimeout(() => onToolCallComplete(updatedMessages), 0);
                     return updatedMessages;
                 });
             } finally {
@@ -176,7 +176,7 @@ export function useToolCall({ setMessages, handleSend, setIsProcessing }: {
             }
             setMessages(prev => {
                 const updatedMessages = [...prev, newMsg];
-                setTimeout(() => handleSend(updatedMessages), 0);
+                setTimeout(() => onToolCallComplete(updatedMessages), 0);
                 return updatedMessages;
             });
         }
