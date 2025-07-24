@@ -170,7 +170,10 @@ export function useToolCall({ setMessages, setIsProcessing, onToolCallComplete }
         reject: () => {
             setPendingToolCall(null);
             let newMsg: Message = {
-                content: "Tool call was rejected by the user.",
+                content: "I will not run this tool call. You need to stop now.",
+                metadata: {
+                    toolCalls: [pendingToolCall as FunctionCall],
+                },
                 role: 'user',
                 ignoreInDisplay: true
             }
