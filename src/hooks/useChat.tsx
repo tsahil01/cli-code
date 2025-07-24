@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { Message, SelectedFile, ChatRequest, FunctionCall, ModelData, Plan, MessageMetadata } from '../types.js';
 import { chat } from '../lib/chat.js';
 
@@ -14,7 +14,10 @@ interface UseChatProps {
 }
 
 export function useChat({ setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall, modelData, plan, handleToolCall }: UseChatProps) {
+    const abortControllerRef = useRef<AbortController | null>(null);
     const handleSend = useCallback(async (msgs: Message[]) => {
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+        abortControllerRef.current = new AbortController();
         setIsProcessing(true);
         setThinking('');
         setContent('');
@@ -58,7 +61,8 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
                     setIsProcessing(false);
                     setContent('');
                     setCurrentToolCall(null);
-                }
+                },
+                abortControllerRef.current.signal
             );
         } catch (error) {
             setMessages(prev => [...prev, {
@@ -107,8 +111,17 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
         });
     }, [modelData, setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall, handleSend]);
 
+    const stopChat = useCallback(() => {
+        abortControllerRef.current?.abort();
+        setIsProcessing(false);
+        setThinking('');
+        setContent('');
+        setCurrentToolCall(null);
+    }, [setIsProcessing, setThinking, setContent, setCurrentToolCall]);
+
     return {
         handleSend,
         handleNewMsgSend,
+        stopChat
     };
 }
