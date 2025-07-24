@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Box, Text } from 'ink';
 import process from 'process';
 
-export const CurrentDirectory = () => {
-    const [currentDir, setCurrentDir] = useState<string>('');
+export const CurrentDirectory = memo(() => {
+    const [currentDir, setCurrentDir] = useState<string>(process.cwd());
 
     useEffect(() => {
-        const updateDirectory = () => {
-            setCurrentDir(process.cwd());
-        };
-        updateDirectory();
-        const interval = setInterval(updateDirectory, 1000);
-
-        return () => clearInterval(interval);
+        // Only set once on mount
+        setCurrentDir(process.cwd());
     }, []);
 
     return (
@@ -22,4 +17,4 @@ export const CurrentDirectory = () => {
             </Text>
         </Box>
     );
-}; 
+}); 

@@ -1,11 +1,11 @@
-import React from "react";
+import React, { memo } from "react";
 import { Box, Text } from "ink";
 import { FileSelector } from "./file-selector.js";
 import { CommandSuggestions } from "./command-suggestions.js";
 import { AttachedFiles } from "./attached-files.js";
 import { InputDisplay } from "./input-display.js";
-import { useChatInput } from "./use-chat-input.js";
 import { SelectedFile, Command, FunctionCall, ModelData, Plan } from "../../types.js";
+import { useChatInput } from "../../hooks/useChatInput.js";
 
 interface ChatInputProps {
 	onSend: (message: string, files: SelectedFile[]) => void;
@@ -17,7 +17,7 @@ interface ChatInputProps {
 	plan: Plan;
 	}
 
-export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel, plan }: ChatInputProps) => {
+export const ChatInput = memo(function ChatInput({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel, plan }: ChatInputProps) {
 	const {
 		input,
 		showFileSelector,
@@ -55,4 +55,4 @@ export const ChatInput = ({ onSend, commands, isProcessing, isDisabled, currentT
 			<AttachedFiles files={selectedFiles} />
 		</Box>
 	);
-};
+});

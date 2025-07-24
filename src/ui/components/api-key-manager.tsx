@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { readConfigFile, appendConfigFile } from '../../lib/configMngt.js';
 import { ConfigFormat } from '../../types.js';
-import { SmallHeader } from './small-header.js';
 
 interface ApiKeyManagerProps {
     action: 'view' | 'add' | 'remove';
@@ -12,7 +11,7 @@ interface ApiKeyManagerProps {
 export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
     const [config, setConfig] = useState<ConfigFormat | null>(null);
     const [currentStep, setCurrentStep] = useState<'loading' | 'main' | 'select' | 'input' | 'confirm'>('loading');
-    const [selectedProvider, setSelectedProvider] = useState<'anthropic' | 'gemini'>('anthropic');
+    const [selectedProvider, setSelectedProvider] = useState<string>('');
     const [inputValue, setInputValue] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,13 +44,51 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
         return key.length > 8 ? `${key.substring(0, 4)}...${key.substring(key.length - 4)}` : '***';
     };
 
+    const getApiKeysFromConfig = () => {
+        if (!config) return [];
+        return Object.entries(config)
+            .filter(([key]) => key.endsWith('_API_KEY'))
+            .map(([key, value]) => ({
+                provider: key.replace('_API_KEY', '').toLowerCase(),
+                keyName: key,
+                value: (value as string) || ''
+            }));
+    };
+
+    const getAvailableProviders = () => {
+        const existingKeys = getApiKeysFromConfig();
+        const knownProviders = ['anthropic', 'gemini', 'openai', 'deepseek'];
+        
+        // Always include known providers, plus any found in config
+        const allProviders = [...new Set([
+            ...knownProviders,
+            ...existingKeys.map(k => k.provider)
+        ])];
+        
+        return allProviders.sort();
+    };
+
+    const getProviderDisplayName = (provider: string) => {
+        switch (provider.toLowerCase()) {
+            case 'anthropic': return 'Anthropic (Claude)';
+            case 'openai': return 'OpenAI (GPT)';
+            case 'gemini': return 'Google (Gemini)';
+            case 'deepseek': return 'DeepSeek';
+            default: return provider.charAt(0).toUpperCase() + provider.slice(1);
+        }
+    };
+
+    const getApiKeyName = (provider: string): keyof ConfigFormat => {
+        return `${provider.toUpperCase()}_API_KEY` as keyof ConfigFormat;
+    };
+
     useInput((inputStr, key) => {
         if (isSubmitting) return;
 
         if (key.escape) {
             if (currentStep === 'input' || currentStep === 'confirm' || currentStep === 'select') {
                 setCurrentStep('main');
-                setSelectedProvider('anthropic');
+                setSelectedProvider('');
                 setInputValue('');
             } else {
                 onClose();
@@ -74,42 +111,29 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                 }
             }
         } else if (currentStep === 'select') {
-            if (key.return) {
-                if (selectedProvider === 'anthropic') {
-                    if (action === 'add') {
-                        setCurrentStep('input');
-                    } else {
-                        setCurrentStep('confirm');
-                    }
-                } else if (selectedProvider === 'gemini') {
-                    if (action === 'add') {
-                        setCurrentStep('input');
-                    } else {
-                        setCurrentStep('confirm');
-                    }
+            const providers = getAvailableProviders();
+            
+            if (key.return && selectedProvider) {
+                if (action === 'add') {
+                    setCurrentStep('input');
+                } else {
+                    setCurrentStep('confirm');
                 }
             } else if (key.upArrow || key.downArrow) {
-                setSelectedProvider(prev => prev === 'anthropic' ? 'gemini' : 'anthropic');
+                const currentIndex = providers.indexOf(selectedProvider);
+                const nextIndex = (currentIndex + 1) % providers.length;
+                setSelectedProvider(providers[nextIndex] || providers[0] || '');
             }
         } else if (currentStep === 'input') {
             if (key.return) {
-                if (selectedProvider === 'anthropic') {
-                    setIsSubmitting(true);
-                    handleSaveConfig({ ['ANTHROPIC_API_KEY']: inputValue.trim() }).then(() => {
-                        setIsSubmitting(false);
-                        setCurrentStep('main');
-                        setInputValue('');
-                        setSelectedProvider('anthropic');
-                    });
-                } else if (selectedProvider === 'gemini') {
-                    setIsSubmitting(true);
-                    handleSaveConfig({ ['GEMINI_API_KEY']: inputValue.trim() }).then(() => {
-                        setIsSubmitting(false);
-                        setCurrentStep('main');
-                        setInputValue('');
-                        setSelectedProvider('anthropic');
-                    });
-                }
+                const apiKeyName = getApiKeyName(selectedProvider);
+                setIsSubmitting(true);
+                handleSaveConfig({ [apiKeyName]: inputValue.trim() }).then(() => {
+                    setIsSubmitting(false);
+                    setCurrentStep('main');
+                    setInputValue('');
+                    setSelectedProvider('');
+                });
             } else if (key.backspace || key.delete) {
                 setInputValue(prev => prev.slice(0, -1));
             } else if (!key.ctrl && !key.meta) {
@@ -119,21 +143,13 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
             }
         } else if (currentStep === 'confirm') {
             if (key.return) {
-                if (selectedProvider === 'anthropic') {
-                    setIsSubmitting(true);
-                    handleSaveConfig({ ['ANTHROPIC_API_KEY']: undefined }).then(() => {
-                        setIsSubmitting(false);
-                        setCurrentStep('main');
-                        setSelectedProvider('anthropic');
-                    });
-                } else if (selectedProvider === 'gemini') {
-                    setIsSubmitting(true);
-                    handleSaveConfig({ ['GEMINI_API_KEY']: undefined }).then(() => {
-                        setIsSubmitting(false);
-                        setCurrentStep('main');
-                        setSelectedProvider('anthropic');
-                    });
-                }
+                const apiKeyName = getApiKeyName(selectedProvider);
+                setIsSubmitting(true);
+                handleSaveConfig({ [apiKeyName]: undefined }).then(() => {
+                    setIsSubmitting(false);
+                    setCurrentStep('main');
+                    setSelectedProvider('');
+                });
             }
         }
     });
@@ -141,29 +157,32 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
     if (currentStep === 'loading') {
         return (
             <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                <SmallHeader />
                 <Text color="cyan" bold>Loading API key configuration...</Text>
             </Box>
         );
     }
 
     if (action === 'view') {
+        const apiKeys = getApiKeysFromConfig();
+        
         return (
             <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                <SmallHeader />
                 <Box marginBottom={2}>
                     <Text color="cyan" bold>API Key Status</Text>
                 </Box>
                 
-                <Box flexDirection="column" marginBottom={2}>
-                    <Text color="blue" bold>Anthropic API Key:</Text>
-                    <Text color="gray">{maskApiKey(config?.['ANTHROPIC_API_KEY'] || '')}</Text>
-                </Box>
-
-                <Box flexDirection="column" marginBottom={2}>
-                    <Text color="blue" bold>Gemini API Key:</Text>
-                    <Text color="gray">{maskApiKey(config?.['GEMINI_API_KEY'] || '')}</Text>
-                </Box>
+                {apiKeys.length === 0 ? (
+                    <Box marginBottom={2}>
+                        <Text color="gray">No API keys configured</Text>
+                    </Box>
+                ) : (
+                    apiKeys.map(({ provider, keyName, value }) => (
+                        <Box key={keyName} flexDirection="column" marginBottom={2}>
+                            <Text color="blue" bold>{getProviderDisplayName(provider)} API Key:</Text>
+                            <Text color="gray">{maskApiKey(value)}</Text>
+                        </Box>
+                    ))
+                )}
 
                 <Box marginTop={1}>
                     <Text color="dim">↵ Press Enter or Esc to close</Text>
@@ -174,9 +193,11 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
 
     if (action === 'add') {
         if (currentStep === 'main') {
+            const providers = getAvailableProviders();
+            
             return (
                 <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                    <SmallHeader />
+                    
                     <Box marginBottom={2}>
                         <Text color="cyan" bold>Add API Key</Text>
                     </Box>
@@ -185,17 +206,12 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                         <Text color="white">Select which API key to add:</Text>
                     </Box>
 
-                    <Box flexDirection="column" marginBottom={1}>
-                        <Text color="yellow">1. Anthropic API Key</Text>
-                        <Text color="gray">   For Claude models</Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.['ANTHROPIC_API_KEY'] || '')}</Text>
-                    </Box>
-
-                    <Box flexDirection="column" marginBottom={2}>
-                        <Text color="yellow">2. Gemini API Key</Text>
-                        <Text color="gray">   For Google Gemini models</Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.['GEMINI_API_KEY'] || '')}</Text>
-                    </Box>
+                    {providers.map((provider, index) => (
+                        <Box key={provider} flexDirection="column" marginBottom={1}>
+                            <Text color="yellow">{index + 1}. {getProviderDisplayName(provider)} API Key</Text>
+                            <Text color="gray">   Current: {maskApiKey((config?.[getApiKeyName(provider)] as string) || '')}</Text>
+                        </Box>
+                    ))}
 
                     <Box marginTop={1}>
                         <Text color="dim">↵ Press Enter to continue • Esc to cancel</Text>
@@ -205,9 +221,11 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
         }
 
         if (currentStep === 'select') {
+            const providers = getAvailableProviders();
+            
             return (
                 <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                    <SmallHeader />
+                    
                     <Box marginBottom={2}>
                         <Text color="cyan" bold>Select Provider</Text>
                     </Box>
@@ -216,25 +234,17 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                         <Text color="white">Choose which API key to add:</Text>
                     </Box>
 
-                    <Box flexDirection="column" marginBottom={1}>
-                        <Text 
-                            color={selectedProvider === 'anthropic' ? 'cyan' : 'gray'}
-                            bold={selectedProvider === 'anthropic'}
-                        >
-                            {selectedProvider === 'anthropic' ? '› ' : '  '}Anthropic API Key
-                        </Text>
-                        <Text color="gray">   For Claude models</Text>
-                    </Box>
-
-                    <Box flexDirection="column" marginBottom={2}>
-                        <Text 
-                            color={selectedProvider === 'gemini' ? 'cyan' : 'gray'}
-                            bold={selectedProvider === 'gemini'}
-                        >
-                            {selectedProvider === 'gemini' ? '› ' : '  '}Gemini API Key
-                        </Text>
-                        <Text color="gray">   For Google Gemini models</Text>
-                    </Box>
+                    {providers.map((provider) => (
+                        <Box key={provider} flexDirection="column" marginBottom={1}>
+                            <Text 
+                                color={selectedProvider === provider ? 'cyan' : 'gray'}
+                                bold={selectedProvider === provider}
+                            >
+                                {selectedProvider === provider ? '› ' : '  '}{getProviderDisplayName(provider)} API Key
+                            </Text>
+                            <Text color="gray">   Current: {maskApiKey((config?.[getApiKeyName(provider)] as string) || '')}</Text>
+                        </Box>
+                    ))}
 
                     <Box marginTop={1}>
                         <Text color="dim">↑↓ select • ↵ confirm • Esc cancel</Text>
@@ -244,12 +254,11 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
         }
 
         if (currentStep === 'input') {
-            const providerName = selectedProvider === 'anthropic' ? 'Anthropic' : 'Gemini';
-            const keyName = selectedProvider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 'GEMINI_API_KEY';
+            const providerName = getProviderDisplayName(selectedProvider);
             
             return (
                 <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                    <SmallHeader />
+                    
                     <Box marginBottom={2}>
                         <Text color="cyan" bold>Add {providerName} API Key</Text>
                     </Box>
@@ -279,9 +288,11 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
 
     if (action === 'remove') {
         if (currentStep === 'main') {
+            const providers = getAvailableProviders();
+            
             return (
                 <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                    <SmallHeader />
+                    
                     <Box marginBottom={2}>
                         <Text color="cyan" bold>Remove API Key</Text>
                     </Box>
@@ -290,15 +301,12 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                         <Text color="white">Select which API key to remove:</Text>
                     </Box>
 
-                    <Box flexDirection="column" marginBottom={1}>
-                        <Text color="yellow">1. Anthropic API Key</Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.ANTHROPIC_API_KEY || '')}</Text>
-                    </Box>
-
-                    <Box flexDirection="column" marginBottom={2}>
-                        <Text color="yellow">2. Gemini API Key</Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.GEMINI_API_KEY || '')}</Text>
-                    </Box>
+                    {providers.map((provider, index) => (
+                        <Box key={provider} flexDirection="column" marginBottom={1}>
+                            <Text color="yellow">{index + 1}. {getProviderDisplayName(provider)} API Key</Text>
+                            <Text color="gray">   Current: {maskApiKey((config?.[getApiKeyName(provider)] as string) || '')}</Text>
+                        </Box>
+                    ))}
 
                     <Box marginTop={1}>
                         <Text color="dim">↵ Press Enter to continue • Esc to cancel</Text>
@@ -308,9 +316,11 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
         }
 
         if (currentStep === 'select') {
+            const providers = getAvailableProviders();
+            
             return (
                 <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                    <SmallHeader />
+                    
                     <Box marginBottom={2}>
                         <Text color="cyan" bold>Select Provider</Text>
                     </Box>
@@ -319,25 +329,17 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
                         <Text color="white">Choose which API key to remove:</Text>
                     </Box>
 
-                    <Box flexDirection="column" marginBottom={1}>
-                        <Text 
-                            color={selectedProvider === 'anthropic' ? 'cyan' : 'gray'}
-                            bold={selectedProvider === 'anthropic'}
-                        >
-                            {selectedProvider === 'anthropic' ? '› ' : '  '}Anthropic API Key
-                        </Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.ANTHROPIC_API_KEY || '')}</Text>
-                    </Box>
-
-                    <Box flexDirection="column" marginBottom={2}>
-                        <Text 
-                            color={selectedProvider === 'gemini' ? 'cyan' : 'gray'}
-                            bold={selectedProvider === 'gemini'}
-                        >
-                            {selectedProvider === 'gemini' ? '› ' : '  '}Gemini API Key
-                        </Text>
-                        <Text color="gray">   Current: {maskApiKey(config?.GEMINI_API_KEY || '')}</Text>
-                    </Box>
+                    {providers.map((provider) => (
+                        <Box key={provider} flexDirection="column" marginBottom={1}>
+                            <Text 
+                                color={selectedProvider === provider ? 'cyan' : 'gray'}
+                                bold={selectedProvider === provider}
+                            >
+                                {selectedProvider === provider ? '› ' : '  '}{getProviderDisplayName(provider)} API Key
+                            </Text>
+                            <Text color="gray">   Current: {maskApiKey((config?.[getApiKeyName(provider)] as string) || '')}</Text>
+                        </Box>
+                    ))}
 
                     <Box marginTop={1}>
                         <Text color="dim">↑↓ select • ↵ confirm • Esc cancel</Text>
@@ -347,11 +349,11 @@ export const ApiKeyManager = ({ action, onClose }: ApiKeyManagerProps) => {
         }
 
         if (currentStep === 'confirm') {
-            const providerName = selectedProvider === 'anthropic' ? 'Anthropic' : 'Gemini';
+            const providerName = getProviderDisplayName(selectedProvider);
             
             return (
                 <Box flexDirection="column" alignItems="flex-start" paddingX={1} paddingY={1}>
-                    <SmallHeader />
+                    
                     <Box marginBottom={2}>
                         <Text color="red" bold>Confirm Removal</Text>
                     </Box>
