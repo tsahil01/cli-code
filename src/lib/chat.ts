@@ -17,7 +17,7 @@ const ERROR_MESSAGES = {
     unknown: 'An unexpected error occurred.'
 };
 
-export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCallback: (thinking: string) => void, contentCallback: (content: string) => void, toolCallCallback: (toolCall: FunctionCall[]) => void, finalCallback: (content: string, metadata: MessageMetadata) => void, doneCallback: (metadata: any) => void) {
+export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCallback: (thinking: string) => void, contentCallback: (content: string) => void, toolCallCallback: (toolCall: FunctionCall[]) => void, finalCallback: (content: string, metadata: MessageMetadata) => void, doneCallback: (metadata: any) => void, abortSignal?: AbortSignal) {
     if (retryCount > 1) {
         console.error("Max retries reached for chat. Kindly login again.");
         return {
@@ -58,6 +58,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                 "Authorization": `Bearer ${accessToken}`,
             },
             body: JSON.stringify({ chat: requestBody }),
+            signal: abortSignal,
         });
 
         if (!response.ok) {
@@ -126,6 +127,9 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
         };
 
         while (true) {
+            if (abortSignal?.aborted) {
+                break;
+            }
             const result = await reader.read();
             if (result.done) break;
 
@@ -209,6 +213,9 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
             }
         }
     } catch (error) {
+        if (error && typeof error === 'object' && (error as any).name === 'AbortError') {
+            return;
+        }
         console.error("Error chatting:", error);
 
         let chatError: ChatError;
@@ -227,7 +234,6 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
             };
         }
 
-        // Call doneCallback with error information
         doneCallback({
             error: chatError
         });
