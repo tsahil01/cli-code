@@ -137,6 +137,12 @@ export function Agent() {
             setActiveCommand(null);
         } else if (key.escape && showPlanDialogRef.current) {
             setShowPlanDialog(false);
+        } else if (key.escape && isProcessing) {
+            chat.stopChat();
+            setMessages(prev => {
+                if (prev.length === 0) return prev;
+                return prev.slice(0, prev.length);
+            });
         }
     });
 
