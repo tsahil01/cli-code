@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import { get_active_file, get_text_selection } from "../../lib/tools.js";
-import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunctionCall, ModelData, Plan } from "../../types.js";
+import { ActiveFileInfo, TextSelectionInfo, FunctionCall, AnthropicFunctionCall, GeminiFunctionCall, OpenAIFunctionCall, ModelData, Plan, UsageMetadata } from "../../types.js";
 import { PlanDisplay } from "./plan-display.js";
 import { CurrentDirectory } from "./current-directory.js";
 
@@ -11,6 +11,10 @@ interface InputDisplayProps {
 	currentToolCall?: FunctionCall | null;
 	currentModel?: ModelData | null;
 	plan: Plan;
+	usage?: {
+		usage: UsageMetadata | null;
+		totalUsage: number;
+	};
 }
 
 const LoadingIndicator = () => {
@@ -27,7 +31,7 @@ const LoadingIndicator = () => {
 	return <Text color="cyan">{frames[frame]}</Text>;
 };
 
-export const InputDisplay = ({ input, isProcessing, currentToolCall, currentModel, plan }: InputDisplayProps) => {
+export const InputDisplay = ({ input, isProcessing, currentToolCall, currentModel, plan, usage }: InputDisplayProps) => {
 	const [activeFile, setActiveFile] = useState<ActiveFileInfo | null>(null);
 	const [textSelection, setTextSelection] = useState<TextSelectionInfo | null>(null);
 
@@ -49,7 +53,10 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 	}, []);
 
 	const getToolName = (toolCall: FunctionCall) => {
-		return (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function?.name || null;
+		let tn =  (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function?.name || null;
+		if (!tn) {
+			return "";
+		}
 	};
 
 	const getPlaceholderText = () => {
@@ -67,6 +74,13 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 					<Box alignSelf="flex-start">
 						<Text color="magenta">
 							{`> ${currentModel.modelCapabilities.displayName} ${currentModel.modelCapabilities.thinking ? "• thinking" : ""}`}
+						</Text>
+					</Box>
+				)}
+				{usage && usage.totalUsage > 0 && (
+					<Box alignSelf="flex-start">
+						<Text color="yellow">
+							{`Usage: ${usage.totalUsage} tokens`}
 						</Text>
 					</Box>
 				)}
