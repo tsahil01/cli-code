@@ -1,4 +1,4 @@
-import { ChatRequest, MessageMetadata, FunctionCall, Message } from "../types.js";
+import { ChatRequest, MessageMetadata, FunctionCall, Message, UsageMetadata } from "../types.js";
 import { WORKER_URL } from "./const.js";
 import { readConfigFile } from "./configMngt.js";
 import { handleTokenExpiry } from "./auth.js";
@@ -162,7 +162,7 @@ export async function chat(data: ChatRequest, retryCount: number = 0, thinkingCa
                             const sdk = event.sdk;
                             const thinkingContent = event.summary?.thinking || '';
                             const finishReason = event.finishReason;
-                            const usageMetadata = event.usageMetadata;
+                            const usageMetadata: UsageMetadata | null = event.usageMetadata;
 
                             let thinkingSignature;
                             let toolCalls;

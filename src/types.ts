@@ -41,7 +41,7 @@ export interface MessageMetadata {
     thinkingSignature?: string;
     toolCalls?: FunctionCall[];
     finishReason?: string;
-    usageMetadata?: any;
+    usageMetadata?: UsageMetadata | null;
 }
 
 export type ToolInput = {
@@ -278,4 +278,11 @@ export interface ModelsResponse {
         gemini: ModelCapabilities[];
         other: ModelCapabilities[];
     };
+}
+
+export interface UsageMetadata {
+    cacheInputTokens: number;
+    inputTokens: number;
+    cacheReadTokens: number;
+    outputTokens: number;
 }
