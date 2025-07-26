@@ -11,7 +11,6 @@ interface ChatPanelProps {
     thinking: string;
     currentContent: string;
     isProcessing: boolean;
-    noMargin?: boolean;
     pendingToolCall: FunctionCall | null;
     handleToolConfirmation: any;
     toolCallHistory: ToolCallStatus[];
@@ -28,7 +27,6 @@ export const ChatPanel = memo(function ChatPanel({
     thinking,
     currentContent,
     isProcessing,
-    noMargin,
     pendingToolCall,
     handleToolConfirmation,
     toolCallHistory,
@@ -49,7 +47,6 @@ export const ChatPanel = memo(function ChatPanel({
                 thinking={thinking}
                 currentContent={currentContent}
                 isProcessing={isProcessing}
-                noMargin={noMargin}
                 usage={usage}   
             />
             <PendingToolCallDialog

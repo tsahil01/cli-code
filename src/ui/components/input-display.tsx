@@ -53,7 +53,7 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 	}, []);
 
 	const getToolName = (toolCall: FunctionCall) => {
-		let tn =  (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function?.name || null;
+		let tn = (toolCall as AnthropicFunctionCall).name || (toolCall as GeminiFunctionCall).name || (toolCall as OpenAIFunctionCall).function?.name || null;
 		if (!tn) {
 			return "";
 		}
@@ -68,7 +68,7 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 
 	return (
 		<Box flexDirection="column">
-			<Box flexDirection="row" justifyContent="flex-end" gap={2}>
+			<Box flexDirection="row" justifyContent="flex-end" gap={1}>
 				<PlanDisplay plan={plan} />
 				{currentModel && (
 					<Box alignSelf="flex-start">
@@ -79,9 +79,8 @@ export const InputDisplay = ({ input, isProcessing, currentToolCall, currentMode
 				)}
 				{usage && usage.totalUsage > 0 && (
 					<Box alignSelf="flex-start">
-						<Text color="yellow">
-							{`Usage: ${usage.totalUsage} tokens`}
-						</Text>
+						<Text color="yellow">{`> ${(
+							currentModel ? (100 - ((usage.totalUsage) * (100)) / (currentModel?.modelCapabilities.maxInputTokens)).toFixed(0) + `%` : "")}`}</Text>
 					</Box>
 				)}
 			</Box>
