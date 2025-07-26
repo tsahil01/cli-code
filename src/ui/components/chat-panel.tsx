@@ -1,9 +1,10 @@
 import React, { memo } from 'react';
 import { Message, FunctionCall, ToolCallStatus, ModelData, Plan, SelectedFile } from '../../types.js';
-import { MessageHistory, StreamingLine } from './message-display.js';
+import { MessageDisplay, MessageHistory, StreamingLine } from './message-display.js';
 import { PendingToolCallDialog } from './pending-tool-call-dialog.js';
 import { ToolStatusDisplay } from './index.js';
 import { ChatInput } from './index.js';
+import { useUsage } from '../../hooks/useUsage.js';
 
 interface ChatPanelProps {
     messages: Message[];
@@ -37,17 +38,19 @@ export const ChatPanel = memo(function ChatPanel({
     currentToolCall,
     currentModel,
     plan
-}: ChatPanelProps) {
+}: ChatPanelProps) {  
+
+    const usage = useUsage();
+
     return (
         <>
-            <MessageHistory
+            <MessageDisplay
                 messages={messages}
-                noMargin={noMargin}
-            />
-            <StreamingLine
                 thinking={thinking}
                 currentContent={currentContent}
                 isProcessing={isProcessing}
+                noMargin={noMargin}
+                usage={usage}   
             />
             <PendingToolCallDialog
                 pendingToolCall={pendingToolCall}
@@ -62,6 +65,7 @@ export const ChatPanel = memo(function ChatPanel({
                 currentToolCall={currentToolCall}
                 currentModel={currentModel}
                 plan={plan}
+                usage={usage}
             />
         </>
     );

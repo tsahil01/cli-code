@@ -4,7 +4,7 @@ import { FileSelector } from "./file-selector.js";
 import { CommandSuggestions } from "./command-suggestions.js";
 import { AttachedFiles } from "./attached-files.js";
 import { InputDisplay } from "./input-display.js";
-import { SelectedFile, Command, FunctionCall, ModelData, Plan } from "../../types.js";
+import { SelectedFile, Command, FunctionCall, ModelData, Plan, UsageMetadata } from "../../types.js";
 import { useChatInput } from "../../hooks/useChatInput.js";
 
 interface ChatInputProps {
@@ -15,9 +15,13 @@ interface ChatInputProps {
 	currentToolCall?: FunctionCall | null;
 	currentModel?: ModelData | null;
 	plan: Plan;
+	usage: {
+		usage: UsageMetadata | null;
+		totalUsage: number;
+	}
 	}
 
-export const ChatInput = memo(function ChatInput({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel, plan }: ChatInputProps) {
+export const ChatInput = memo(function ChatInput({ onSend, commands, isProcessing, isDisabled, currentToolCall, currentModel, plan, usage}: ChatInputProps) {
 	const {
 		input,
 		showFileSelector,
@@ -48,6 +52,7 @@ export const ChatInput = memo(function ChatInput({ onSend, commands, isProcessin
 					currentToolCall={currentToolCall}
 					currentModel={currentModel}
 					plan={plan}
+					usage={usage}
 				/>
 			</Box>
 			{/* </Box> */}
