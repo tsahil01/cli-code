@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Box, Text } from 'ink';
 import { MarkdownRenderer } from './markdown-renderer.js';
-import { Message } from '../../types.js';
+import { Message, UsageMetadata } from '../../types.js';
 
 interface MessageDisplayProps {
     messages: Message[];
@@ -9,14 +9,34 @@ interface MessageDisplayProps {
     currentContent?: string;
     isProcessing?: boolean;
     noMargin?: boolean;
+    usage: {
+        setUsage: (usage: UsageMetadata | null) => void;
+    };
 }
 
-export const MessageHistory = memo(function MessageHistory({ messages, noMargin = false }: { messages: Message[]; noMargin?: boolean }) {
+export const MessageDisplay = memo(function MessageDisplay({ messages, thinking, currentContent, isProcessing, noMargin = false, usage }: MessageDisplayProps) {
+    return (
+        <>
+            <MessageHistory messages={messages} noMargin={noMargin} usage={usage} />
+            <StreamingLine thinking={thinking} currentContent={currentContent} isProcessing={isProcessing} />
+        </>
+    );
+});
+
+export const MessageHistory = memo(function MessageHistory({ messages, noMargin = false, usage }: { messages: Message[]; noMargin?: boolean; usage: { setUsage: (usage: UsageMetadata | null) => void }; }) {
     if (messages.length === 0) {
         return null;
     }
+
+    if (messages.length) {
+        let lastMsg = messages[messages.length - 1];
+        if (lastMsg.metadata?.usageMetadata) {
+            usage.setUsage(lastMsg.metadata.usageMetadata);
+        }
+    }
+
     return (
-        <Box flexDirection="column" {...(!noMargin ? {marginY: 1} : {})}>
+        <Box flexDirection="column" {...(!noMargin ? { marginY: 1 } : {})}>
             {messages.filter(msg => !msg.ignoreInDisplay).map((message, index, filteredMessages) => {
                 const isFirstInGroup = index === 0 || filteredMessages[index - 1].role !== message.role;
                 const isLastInGroup = index === filteredMessages.length - 1 || filteredMessages[index + 1].role !== message.role;
@@ -101,12 +121,3 @@ export const StreamingLine = memo(function StreamingLine({ thinking, currentCont
         </Box>
     );
 });
-
-export const MessageDisplay = memo(function MessageDisplay({ messages, thinking, currentContent, isProcessing, noMargin = false }: MessageDisplayProps) {
-    return (
-        <>
-            <MessageHistory messages={messages} noMargin={noMargin} />
-            <StreamingLine thinking={thinking} currentContent={currentContent} isProcessing={isProcessing} />
-        </>
-    );
-}); 

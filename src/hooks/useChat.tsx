@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { Message, SelectedFile, ChatRequest, FunctionCall, ModelData, Plan, MessageMetadata } from '../types.js';
+import { Message, SelectedFile, ChatRequest, FunctionCall, ModelData, Plan, MessageMetadata, UsageMetadata } from '../types.js';
 import { chat } from '../lib/chat.js';
 
 interface UseChatProps {
@@ -49,7 +49,9 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
                         metadata: {
                             thinkingContent: metadata.thinkingContent,
                             thinkingSignature: metadata.thinkingSignature,
-                            toolCalls: metadata.toolCalls || []
+                            toolCalls: metadata.toolCalls || [],
+                            finishReason: metadata.finishReason,
+                            usageMetadata: metadata.usageMetadata || null
                         }
                     }]);
                     if (metadata.toolCalls && metadata.toolCalls.length > 0) {
