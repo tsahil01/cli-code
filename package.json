@@ -20,8 +20,16 @@
     "type": "git",
     "url": "git+https://github.com/tsahil01/cli-code.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "cli",
+    "code",
+    "ai",
+    "assistant",
+    "codebase",
+    "conversational",
+    "developer-tools"
+  ],
+  "author": "Sahil Tiwaskar <your-email@example.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/tsahil01/cli-code/issues"
