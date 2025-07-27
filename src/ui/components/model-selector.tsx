@@ -77,6 +77,18 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
         }
     };
 
+    const groupModelsByProvider = (models: ModelCapabilities[]) => {
+        const grouped = models.reduce((acc, model) => {
+            if (!acc[model.provider]) {
+                acc[model.provider] = [];
+            }
+            acc[model.provider].push(model);
+            return acc;
+        }, {} as Record<string, ModelCapabilities[]>);
+        
+        return grouped;
+    };
+
     useInput((input, key) => {
         if (isLoading) return;
 
@@ -155,51 +167,64 @@ export const ModelSelector = ({ onSelect, onClose, currentModel }: ModelSelector
                     <Text color="gray">Select a model to use:</Text>
                 </Box>
                 
-                {availableModels.map((model, index) => {
-                    const isSelected = index === selectedIndex;
-                    const isCurrent = currentModel && 
-                        model.provider === currentModel.provider && 
-                        model.modelName === currentModel.model;
-                    
-                    return (
-                        <Box key={`${model.provider}-${model.modelName}-${model.sdk}`} marginBottom={0}>
-                            <Text color={isSelected ? "cyan" : "white"}>
-                                {isSelected ? "► " : "  "}
-                                {isCurrent ? "● " : "○ "}
-                                <Text color={getStatusColor(model)}>{getStatusIndicator(model)} </Text>
-                                <Text color={isSelected ? "cyan" : "white"} bold={isSelected}>
-                                    {model.displayName}
-                                </Text>
-                                {!hasApiKey(model) && (
-                                    <Text color="yellow"> (setup required)</Text>
-                                )}
-                            </Text>
-                            {isSelected && (
-                                <Box marginLeft={6} flexDirection="column">
-                                    <Text color="dim">
-                                        Provider: {model.provider}
-                                    </Text>
-                                    <Text color="dim">
-                                        Context: {model.maxInputTokens.toLocaleString()} tokens
-                                    </Text>
-                                    <Text color="dim">
-                                        Output: {model.maxOutputTokens.toLocaleString()} tokens
-                                    </Text>
-                                    {model.thinking && (
-                                        <Text color="dim">
-                                            Thinking: {model.minThinkingTokens?.toLocaleString() || 0}-{model.maxThinkingTokens?.toLocaleString() || 0} tokens
+                {Object.entries(groupModelsByProvider(availableModels)).map(([provider, models], providerIndex) => (
+                    <Box key={provider} flexDirection="column" marginBottom={1}>
+                        <Text color="magenta" bold>
+                            {provider.toUpperCase()}
+                        </Text>
+                        
+                        {models.map((model, modelIndex) => {
+                            const globalIndex = availableModels.findIndex(m => 
+                                m.provider === model.provider && 
+                                m.modelName === model.modelName && 
+                                m.sdk === model.sdk
+                            );
+                            const isSelected = globalIndex === selectedIndex;
+                            const isCurrent = currentModel && 
+                                model.provider === currentModel.provider && 
+                                model.modelName === currentModel.model;
+                            
+                            return (
+                                <Box key={`${model.provider}-${model.modelName}-${model.sdk}`} marginLeft={2} marginBottom={0}>
+                                    <Text color={isSelected ? "cyan" : "white"}>
+                                        {isSelected ? "► " : "  "}
+                                        {isCurrent ? "● " : "○ "}
+                                        <Text color={getStatusColor(model)}>{getStatusIndicator(model)} </Text>
+                                        <Text color={isSelected ? "cyan" : "white"} bold={isSelected}>
+                                            {model.displayName}
                                         </Text>
-                                    )}
-                                    {!hasApiKey(model) && (
-                                        <Text color="yellow">
-                                            ⚠ API key required - will prompt for setup
-                                        </Text>
+                                        {!hasApiKey(model) && (
+                                            <Text color="yellow"> (setup required)</Text>
+                                        )}
+                                    </Text>
+                                    {isSelected && (
+                                        <Box marginLeft={6} flexDirection="column">
+                                            <Text color="dim">
+                                                Provider: {model.provider}
+                                            </Text>
+                                            <Text color="dim">
+                                                Context: {model.maxInputTokens.toLocaleString()} tokens
+                                            </Text>
+                                            <Text color="dim">
+                                                Output: {model.maxOutputTokens.toLocaleString()} tokens
+                                            </Text>
+                                            {model.thinking && (
+                                                <Text color="dim">
+                                                    Thinking: {model.minThinkingTokens?.toLocaleString() || 0}-{model.maxThinkingTokens?.toLocaleString() || 0} tokens
+                                                </Text>
+                                            )}
+                                            {!hasApiKey(model) && (
+                                                <Text color="yellow">
+                                                    ⚠ API key required - will prompt for setup
+                                                </Text>
+                                            )}
+                                        </Box>
                                     )}
                                 </Box>
-                            )}
-                        </Box>
-                    );
-                })}
+                            );
+                        })}
+                    </Box>
+                ))}
                 
                 <Box marginTop={1}>
                     <Text color="dim">↑↓ navigate • Enter select • Esc cancel</Text>
