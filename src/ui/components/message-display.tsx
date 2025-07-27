@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { MarkdownRenderer } from './markdown-renderer.js';
 import { Message, UsageMetadata } from '../../types.js';
@@ -24,15 +24,17 @@ export const MessageDisplay = memo(function MessageDisplay({ messages, thinking,
 });
 
 export const MessageHistory = memo(function MessageHistory({ messages, noMargin = false, usage }: { messages: Message[]; noMargin?: boolean; usage: { setUsage: (usage: UsageMetadata | null) => void }; }) {
+    useEffect(() => {
+        if (messages.length > 0) {
+            let lastMsg = messages[messages.length - 1];
+            if (lastMsg.metadata?.usageMetadata) {
+                usage.setUsage(lastMsg.metadata.usageMetadata);
+            }
+        }
+    }, [messages, usage]);
+
     if (messages.length === 0) {
         return null;
-    }
-
-    if (messages.length) {
-        let lastMsg = messages[messages.length - 1];
-        if (lastMsg.metadata?.usageMetadata) {
-            usage.setUsage(lastMsg.metadata.usageMetadata);
-        }
     }
 
     return (
