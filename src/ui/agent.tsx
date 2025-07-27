@@ -156,7 +156,6 @@ export function Agent() {
                         thinking={thinking}
                         currentContent={content}
                         isProcessing={isProcessing}
-                        noMargin
                         pendingToolCall={toolCall.pendingToolCall}
                         handleToolConfirmation={toolCall.handleToolConfirmation}
                         toolCallHistory={toolCall.toolCallHistory}

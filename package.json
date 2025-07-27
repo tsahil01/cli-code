@@ -34,7 +34,8 @@
     "ink-big-text": "^2.0.0",
     "marked": "^16.0.0",
     "react": "^19.1.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@types/node": "^24.0.4",
