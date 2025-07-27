@@ -1,1 +1,24 @@
 .env
+
+# Source files (we want to ship the compiled dist/)
+src/
+tsconfig.json
+tsconfig.tsbuildinfo
+
+# Development files
+.vscode/
+.git/
+node_modules/
+
+# Documentation (keep README.md but exclude large files)
+docs/gifs/
+docs/imgs/
+
+# Large files that aren't needed
+*.gif
+*.png
+
+# Test files
+test/
+*.test.js
+*.test.ts
