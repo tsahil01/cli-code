@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { Message, SelectedFile, ChatRequest, FunctionCall, ModelData, Plan, MessageMetadata, UsageMetadata } from '../types.js';
 import { chat } from '../lib/chat.js';
+import { autoSaveSession, getSessionIdForDirectory } from '../lib/sessions.js';
 
 interface UseChatProps {
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -11,10 +12,12 @@ interface UseChatProps {
     modelData: ModelData | null;
     plan: Plan;
     handleToolCall: (toolCall: FunctionCall, metadata: MessageMetadata) => Promise<void>;
+    currentDirectory: string;
 }
 
-export function useChat({ setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall, modelData, plan, handleToolCall }: UseChatProps) {
+export function useChat({ setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall, modelData, plan, handleToolCall, currentDirectory }: UseChatProps) {
     const abortControllerRef = useRef<AbortController | null>(null);
+    const currentSessionIdRef = useRef<string>(getSessionIdForDirectory(currentDirectory));
     const handleSend = useCallback(async (msgs: Message[]) => {
         if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
@@ -43,17 +46,29 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
                     }
                 },
                 async (finalContent, metadata) => {
-                    setMessages(prev => [...prev, {
-                        content: finalContent,
-                        role: 'assistant',
-                        metadata: {
-                            thinkingContent: metadata.thinkingContent,
-                            thinkingSignature: metadata.thinkingSignature,
-                            toolCalls: metadata.toolCalls || [],
-                            finishReason: metadata.finishReason,
-                            usageMetadata: metadata.usageMetadata || null
-                        }
-                    }]);
+                    setMessages(prev => {
+                        const updatedMessages = [...prev, {
+                            content: finalContent,
+                            role: 'assistant' as const,
+                            metadata: {
+                                thinkingContent: metadata.thinkingContent,
+                                thinkingSignature: metadata.thinkingSignature,
+                                toolCalls: metadata.toolCalls || [],
+                                finishReason: metadata.finishReason,
+                                usageMetadata: metadata.usageMetadata || null
+                            }
+                        }];
+                        
+                        setTimeout(async () => {
+                            try {
+                                await autoSaveSession(updatedMessages, currentDirectory, currentSessionIdRef.current);
+                            } catch (error) {
+                                console.error('Failed to auto-save session:', error);
+                            }
+                        }, 0);
+                        
+                        return updatedMessages;
+                    });
                     if (metadata.toolCalls && metadata.toolCalls.length > 0) {
                         setCurrentToolCall(metadata.toolCalls[0]);
                         await handleToolCall(metadata.toolCalls[0], metadata);
@@ -91,6 +106,15 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
         setContent('');
         setMessages(prev => {
             const updatedMessages = [...prev, { content: userMessage, role: 'user' as const }];
+            
+            setTimeout(async () => {
+                try {
+                    await autoSaveSession(updatedMessages, currentDirectory, currentSessionIdRef.current);
+                } catch (error) {
+                    console.error('Failed to auto-save session:', error);
+                }
+            }, 0);
+            
             setTimeout(async () => {
                 if (!modelData) {
                     return;
@@ -113,6 +137,10 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
         });
     }, [modelData, setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall, handleSend]);
 
+    const startNewSession = useCallback(() => {
+        currentSessionIdRef.current = getSessionIdForDirectory(currentDirectory);
+    }, [currentDirectory]);
+
     const stopChat = useCallback(() => {
         abortControllerRef.current?.abort();
         setIsProcessing(false);
@@ -124,6 +152,7 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
     return {
         handleSend,
         handleNewMsgSend,
-        stopChat
+        stopChat,
+        startNewSession
     };
 }

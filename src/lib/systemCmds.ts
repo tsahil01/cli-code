@@ -8,16 +8,10 @@ export const systemCmds: Command[] = [{
     options: [],
 },{
     name: "sessions",
-    description: "list sessions",
+    description: "browse and load sessions",
     category: "session",
     args: [],
-    options: [{
-        name: "session",
-        description: "Select a session to load",
-        type: "select",
-        choices: ["Session 1", "Session 2", "Session 3"],
-        required: true
-    }],
+    options: [],
 },{
     name: "new",
     description: "start a new session",

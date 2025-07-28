@@ -286,3 +286,9 @@ export interface UsageMetadata {
     cacheReadTokens: number;
     outputTokens: number;
 }
+
+export interface Session {
+    date: string;
+    messages: Message[];
+    directory: string;
+}
