@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Header } from "./components/index.js";
-import { Command, SelectedFile, Message, Plan } from "../types.js";
+import { Command, SelectedFile, Message, Plan, Session } from "../types.js";
 import { CommandModal } from './components/command-modal.js';
 import { useInput, Box } from 'ink';
 import { systemCmds } from '../lib/systemCmds.js';
@@ -13,6 +13,8 @@ import { PlanDialogWrapper } from './components/plan-dialog-wrapper.js';
 import { ApiKeyPromptWrapper } from './components/api-key-prompt-wrapper.js';
 import { useChat } from '../hooks/useChat.js';
 import { ChatPanel } from './components/chat-panel.js';
+import process from 'process';
+import { SessionDialog } from './components/session-dialog.js';
 
 export function Agent() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -21,6 +23,7 @@ export function Agent() {
     const [content, setContent] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [showPlanDialog, setShowPlanDialog] = useState<boolean>(false);
+    const [showSessionDialog, setShowSessionDialog] = useState<boolean>(false);
     const onToolCallComplete = (msgs: Message[]) => {
         chat.handleSend(msgs);
     };
@@ -32,11 +35,30 @@ export function Agent() {
     });
 
     const chat = useChat({
-        setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall: toolCall.setCurrentToolCall, modelData: model.modelData, plan: plan.plan, handleToolCall: toolCall.handleToolCall
+        setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall: toolCall.setCurrentToolCall, modelData: model.modelData, plan: plan.plan, handleToolCall: toolCall.handleToolCall, currentDirectory: process.cwd()
     });
 
     const handleCommandModalClose = useCallback(() => setActiveCommand(null), []);
     const handlePlanDialogClose = useCallback(() => setShowPlanDialog(false), []);
+    const handleSessionDialogClose = useCallback(() => setShowSessionDialog(false), []);
+    const handleSessionSelect = useCallback((session: Session) => {
+        const currentDir = process.cwd();
+        setMessages(session.messages);
+        if (session.directory != currentDir) {
+            setMessages(prev => [...prev, {
+                content: `⚠️  Warning: Session was created in a different directory\nSession directory: ${session.directory}\nCurrent directory: ${currentDir}\n\nLoading session anyway...`,
+                role: 'system',
+                ignoreInLLM: true,
+            }]);
+        } else {
+            setMessages(prev => [...prev, {
+                content: `Session loaded: ${session.date} (${session.messages.length} messages from ${session.directory})`,
+                role: 'system',
+                ignoreInLLM: true
+            }]);
+        }
+        setShowSessionDialog(false);
+    }, []);
     const handlePlanSave = useCallback(async (newPlan: Plan) => {
         plan.setPlan(newPlan);
         await appendConfigFile({ plan: newPlan });
@@ -49,11 +71,24 @@ export function Agent() {
         if (message.startsWith("/")) {
             const commandName = message.slice(1);
             const command = systemCmds.find(cmd => cmd.name === commandName);
+            
+
+            
             if (command) {
                 if (command.name === 'exit') {
                     process.exit(0);
                 } else if (command.name === 'mode') {
                     setShowPlanDialog(true);
+                } else if (command.name === 'new') {
+                    chat.startNewSession();
+                    setMessages([]);
+                    setMessages(prev => [...prev, {
+                        content: "Started a new session.",
+                        role: 'system',
+                        ignoreInLLM: true
+                    }]);
+                } else if (command.name === 'sessions') {
+                    setShowSessionDialog(true);
                 } else {
                     setActiveCommand(command);
                 }
@@ -137,6 +172,8 @@ export function Agent() {
             setActiveCommand(null);
         } else if (key.escape && showPlanDialogRef.current) {
             setShowPlanDialog(false);
+        } else if (key.escape && showSessionDialog) {
+            setShowSessionDialog(false);
         } else if (key.escape && isProcessing) {
             chat.stopChat();
             setMessages(prev => {
@@ -180,6 +217,12 @@ export function Agent() {
                         showPlanDialog={showPlanDialog}
                         setShowPlanDialog={setShowPlanDialog}
                     />
+                    {showSessionDialog && (
+                        <SessionDialog
+                            onSelect={handleSessionSelect}
+                            onCancel={handleSessionDialogClose}
+                        />
+                    )}
                     <ApiKeyPromptWrapper
                         showApiKeyPrompt={model.showApiKeyPrompt}
                         pendingModel={model.pendingModel}
