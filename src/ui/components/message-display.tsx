@@ -86,7 +86,7 @@ export const MessageHistory = memo(function MessageHistory({ messages, noMargin 
 });
 
 export const StreamingLine = memo(function StreamingLine({ thinking, currentContent, isProcessing }: { thinking?: string; currentContent?: string; isProcessing?: boolean }) {
-    if (!isProcessing && !thinking && !currentContent) return null;
+    if (!isProcessing || (!thinking && !currentContent)) return null;
     return (
         <Box flexDirection="column">
             <Box flexDirection="row">
