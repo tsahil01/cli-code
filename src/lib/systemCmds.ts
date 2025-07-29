@@ -57,6 +57,19 @@ export const systemCmds: Command[] = [{
         required: true
     }],
 },{
+    name: "tools",
+    description: "manage tool call settings",
+    category: "system",
+    args: [],
+    options: [{
+        name: "action",
+        description: "Select tool action",
+        type: "select",
+        choices: ["toggle-autoaccept"],
+        default: "toggle-autoaccept",
+        required: true
+    }],
+},{
     name: "exit",
     description: "exit the app",
     category: "system",
