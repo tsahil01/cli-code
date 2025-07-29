@@ -31,7 +31,7 @@ export const CommandSuggestions = ({ suggestions, selectedIndex, visible }: Comm
 					</Text>
 				</Box>
 			))}
-			<Text color="gray" dimColor>Use ↑↓ to navigate, Tab to complete, Esc to close</Text>
+			<Text color="gray" dimColor>Use ↑↓ to navigate, Tab/Enter to complete, Esc to close</Text>
 		</Box>
 	);
 }; 
