@@ -1,4 +1,4 @@
-import React, { memo, useEffect } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import { Box, Text } from 'ink';
 import { MarkdownRenderer } from './markdown-renderer.js';
 import { Message, UsageMetadata } from '../../types.js';
@@ -31,20 +31,26 @@ export const MessageHistory = memo(function MessageHistory({ messages, noMargin 
                 usage.setUsage(lastMsg.metadata.usageMetadata);
             }
         }
-    }, [messages, usage]);
+    }, [messages.length, usage]);   
 
-    if (messages.length === 0) {
+    const filteredMessages = useMemo(() => 
+        messages.filter(msg => !msg.ignoreInDisplay), 
+        [messages]
+    );
+
+    if (filteredMessages.length === 0) {
         return null;
     }
 
     return (
         <Box flexDirection="column" {...(!noMargin ? { marginY: 1 } : {})}>
-            {messages.filter(msg => !msg.ignoreInDisplay).map((message, index, filteredMessages) => {
+            {filteredMessages.map((message, index) => {
                 const isFirstInGroup = index === 0 || filteredMessages[index - 1].role !== message.role;
                 const isLastInGroup = index === filteredMessages.length - 1 || filteredMessages[index + 1].role !== message.role;
+                const messageKey = `${message.role}-${index}-${message.content?.slice(0, 20)}`;
                 return (
                     <Box
-                        key={index}
+                        key={messageKey}
                         flexDirection="row"
                         marginY={isFirstInGroup ? 1 : 0}
                         marginBottom={isLastInGroup ? 1 : 0}
@@ -57,24 +63,25 @@ export const MessageHistory = memo(function MessageHistory({ messages, noMargin 
                             <>
                                 <Text color={message.role === 'user' ? "cyan" : "magenta"}>┃ </Text>
                                 <Box paddingX={1}>
-                                    {message.content && message.content.length > 0 && (
+                                    {message.content && message.content.length > 0 ? (
                                         <MarkdownRenderer
-                                            content={message.content || ''}
+                                            key={`content-${messageKey}`}
+                                            content={message.content}
                                             dimmed={false}
                                         />
-                                    )}
-                                    {(!message.content || message.content.length === 0) && message.metadata?.thinkingContent && (
+                                    ) : message.metadata?.thinkingContent ? (
                                         <MarkdownRenderer
-                                            content={`${message.metadata?.thinkingContent}` || ''}
+                                            key={`thinking-${messageKey}`}
+                                            content={message.metadata.thinkingContent}
                                             dimmed={true}
                                         />
-                                    )}
-                                    {(!message.content || message.content.length === 0) && !message.metadata?.thinkingContent && message.metadata?.toolCalls && (
+                                    ) : message.metadata?.toolCalls ? (
                                         <MarkdownRenderer
-                                            content={`Running tool calls...`}
+                                            key={`toolcalls-${messageKey}`}
+                                            content="Running tool calls..."
                                             dimmed={true}
                                         />
-                                    )}
+                                    ) : null}
                                 </Box>
                             </>
                         )}
@@ -86,7 +93,8 @@ export const MessageHistory = memo(function MessageHistory({ messages, noMargin 
 });
 
 export const StreamingLine = memo(function StreamingLine({ thinking, currentContent, isProcessing }: { thinking?: string; currentContent?: string; isProcessing?: boolean }) {
-    if (!isProcessing || (!thinking && !currentContent)) return null;
+    if (!isProcessing) return null;
+    if (!thinking && !currentContent) return null;
     return (
         <Box flexDirection="column">
             <Box flexDirection="row">

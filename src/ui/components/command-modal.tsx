@@ -4,6 +4,7 @@ import { Command, CommandOption, ModelCapabilities, ModelData } from '../../type
 import { SettingsEditor } from './settings-editor.js';
 import { ModelSelector } from './model-selector.js';
 import { ApiKeyManager } from './api-key-manager.js';
+import { ToolsManager } from './tools-manager.js';
 
 interface CommandModalProps {
     command: Command;
@@ -23,6 +24,7 @@ export const CommandModal = memo(function CommandModal({ command, onClose, onMod
     const [showSettingsEditor, setShowSettingsEditor] = useState(false);
     const [showModelSelector, setShowModelSelector] = useState(false);
     const [showApiKeyManager, setShowApiKeyManager] = useState(false);
+    const [showToolsManager, setShowToolsManager] = useState(false);
 
     const handleCommandExecute = async (command: Command, options: Record<string, any>) => {
         switch (command.name) {
@@ -39,6 +41,9 @@ export const CommandModal = memo(function CommandModal({ command, onClose, onMod
             case 'api':
                 setShowApiKeyManager(true);
                 break;
+            case 'tools':
+                setShowToolsManager(true);
+                break;
         }
     };
 
@@ -46,7 +51,7 @@ export const CommandModal = memo(function CommandModal({ command, onClose, onMod
     const currentOption = selectableOptions[selectedOptionIndex];
 
     useInput((input, key) => {
-        if (showSettingsEditor || showModelSelector || showApiKeyManager) {
+        if (showSettingsEditor || showModelSelector || showApiKeyManager || showToolsManager) {
             return;
         }
 
@@ -91,6 +96,8 @@ export const CommandModal = memo(function CommandModal({ command, onClose, onMod
             } else if (command.name === 'model') {
                 handleCommandExecute(command, optionValues);
             } else if (command.name === 'api') {
+                handleCommandExecute(command, optionValues);
+            } else if (command.name === 'tools') {
                 handleCommandExecute(command, optionValues);
             } else if (handleCommandExecute) {
                 handleCommandExecute(command, optionValues);
@@ -148,6 +155,17 @@ export const CommandModal = memo(function CommandModal({ command, onClose, onMod
         );
     }
 
+    if (showToolsManager) {
+        return (
+            <ToolsManager 
+                onClose={() => {
+                    setShowToolsManager(false);
+                    onClose();
+                }}
+            />
+        );
+    }
+
     const renderOption = (option: CommandOption) => {
         if (option.type === 'select' && option.choices) {
             const currentValue = optionValues[option.name] || option.choices[0];
@@ -181,6 +199,7 @@ export const CommandModal = memo(function CommandModal({ command, onClose, onMod
                         <Text>/new - New session</Text>
                         <Text>/model - Switch model</Text>
                         <Text>/api - Manage API keys</Text>
+                        <Text>/tools - Manage tool call settings</Text>
                         <Text>/settings - Edit configuration file</Text>
                         <Text>/exit - Exit app</Text>
                     </Box>
@@ -239,6 +258,16 @@ export const CommandModal = memo(function CommandModal({ command, onClose, onMod
                     <Box flexDirection="column">
                         <Text color="cyan">Manage API Keys</Text>
                         <Text color="gray">View, add, or remove API keys for AI providers</Text>
+                        {command.options.map(renderOption)}
+                        <Text dimColor>↑↓ select • tab switch • enter confirm</Text>
+                    </Box>
+                );
+
+            case 'tools':
+                return (
+                    <Box flexDirection="column">
+                        <Text color="cyan">Manage Tool Call Settings</Text>
+                        <Text color="gray">Configure how tool calls are handled</Text>
                         {command.options.map(renderOption)}
                         <Text dimColor>↑↓ select • tab switch • enter confirm</Text>
                     </Box>
