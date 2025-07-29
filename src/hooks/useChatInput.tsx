@@ -61,12 +61,22 @@ export const useChatInput = ({ onSend, commands, isDisabled }: UseChatInputProps
 			}
 		}
 
-		if (key.return && input.trim()) {
-			onSend(input.trim(), selectedFiles);
-			setInput('');
-			setSelectedFiles([]);
-			setShowSuggestions(false);
-			setSelectedSuggestionIndex(0);
+		if (key.return) {
+			if (showSuggestions && suggestions.length > 0) {
+				const selectedCmd = suggestions[selectedSuggestionIndex];
+				if (selectedCmd) {
+					setInput(`/${selectedCmd.name}`);
+					setShowSuggestions(false);
+					setSelectedSuggestionIndex(0);
+				}
+				return;
+			} else if (input.trim()) {
+				onSend(input.trim(), selectedFiles);
+				setInput('');
+				setSelectedFiles([]);
+				setShowSuggestions(false);
+				setSelectedSuggestionIndex(0);
+			}
 		} else if (key.backspace || key.delete) {
 			const newInput = input.slice(0, -1);
 			setInput(newInput);
