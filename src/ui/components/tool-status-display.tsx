@@ -51,9 +51,6 @@ export const ToolStatusDisplay = memo(function ToolStatusDisplay({ toolCalls }: 
                 <Box key={toolCall.id} flexDirection="row" alignItems="center">
                     <Text color={getStatusColor(toolCall.status)}>{getStatusSymbol(toolCall.status)} </Text>
                     <Text color="white">{toolCall.name}</Text>
-                    {toolCall.status === 'error' && (
-                        <Text color="red"> {toolCall.errorMessage}</Text>
-                    )}
                 </Box>
             ))}
         </Box>
