@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 import { Message, SelectedFile, ChatRequest, FunctionCall, ModelData, Plan, MessageMetadata, UsageMetadata } from '../types.js';
 import { chat } from '../lib/chat.js';
 import { autoSaveSession, getSessionIdForDirectory } from '../lib/sessions.js';
@@ -18,6 +18,22 @@ interface UseChatProps {
 export function useChat({ setMessages, setThinking, setContent, setIsProcessing, setCurrentToolCall, modelData, plan, handleToolCall, currentDirectory }: UseChatProps) {
     const abortControllerRef = useRef<AbortController | null>(null);
     const currentSessionIdRef = useRef<string>(getSessionIdForDirectory(currentDirectory));
+    
+    const debouncedSetThinking = useMemo(() => {
+        let timeoutId: NodeJS.Timeout | null = null;
+        return (thinking: string) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => setThinking(thinking), 50);
+        };
+    }, [setThinking]);
+
+    const debouncedSetContent = useMemo(() => {
+        let timeoutId: NodeJS.Timeout | null = null;
+        return (content: string) => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => setContent(content), 50);
+        };
+    }, [setContent]);
     const handleSend = useCallback(async (msgs: Message[]) => {
         if (abortControllerRef.current) abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
@@ -38,8 +54,8 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
             await chat(
                 chatRequest,
                 0,
-                (thinking) => setThinking(thinking),
-                (content) => setContent(content),
+                (thinking) => debouncedSetThinking(thinking),
+                (content) => debouncedSetContent(content),
                 (toolCalls: FunctionCall[]) => {
                     if (toolCalls.length > 0) {
                         setCurrentToolCall(toolCalls[0]);
@@ -50,6 +66,7 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
                         const updatedMessages = [...prev, {
                             content: finalContent,
                             role: 'assistant' as const,
+                            timestamp: Date.now(),
                             metadata: {
                                 thinkingContent: metadata.thinkingContent,
                                 thinkingSignature: metadata.thinkingSignature,
@@ -105,7 +122,7 @@ export function useChat({ setMessages, setThinking, setContent, setIsProcessing,
         setThinking('');
         setContent('');
         setMessages(prev => {
-            const updatedMessages = [...prev, { content: userMessage, role: 'user' as const }];
+            const updatedMessages = [...prev, { content: userMessage, role: 'user' as const, timestamp: Date.now() }];
             
             setTimeout(async () => {
                 try {
