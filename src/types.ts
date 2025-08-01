@@ -6,6 +6,7 @@ export interface Message {
     ignoreInDisplay?: boolean;
     thinking?: boolean;
     metadata?: MessageMetadata;
+    timestamp?: number;
 }
 
 export interface AnthropicFunctionCall {
